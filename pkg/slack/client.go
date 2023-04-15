@@ -3,6 +3,7 @@ package slack
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -39,22 +40,12 @@ func New(oauthToken string, appToken string, appUserId string) *Client {
 	return &Client{api: api, socketClient: socketClient, botId: appUserId}
 }
 
-func (client *Client) Test() chan Message {
-	res := make(chan Message)
-	for i := 0; i < 5; i++ {
-		go func(i int) {
-			res <- Message{User: string(rune(i)), Channel: "test", Text: "test test"}
-		}(i)
-	}
+func (client *Client) GetMessages(res chan Message) {
 
-	return res
-}
-func (client *Client) GetMessages() chan Message {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
 
-	chatChannel := make(chan Message)
 	go func(ctx context.Context, client *Client) {
 		for {
 			select {
@@ -62,7 +53,7 @@ func (client *Client) GetMessages() chan Message {
 				log.Println("Shutting down socketmode listener")
 				return
 			case event := <-client.socketClient.Events:
-
+				log.Printf("event: %v\n", event)
 				switch event.Type {
 
 				case socketmode.EventTypeEventsAPI:
@@ -72,27 +63,16 @@ func (client *Client) GetMessages() chan Message {
 						continue
 					}
 					client.socketClient.Ack(*event.Request)
-					log.Printf("EventsAPI: %v\n", eventsAPI)
-					chatChannel <- Message{User: "test user", Channel: "test Channel", Text: "test Text"}
-					/*
-						err := HandleBotEvent(eventsAPI, api, botId, chatChannel)
-						if err != nil {
-							log.Println(err)
-						} */
-					//if msg.isAvailable() {
-					//	res <- msg
-					//}
+					HandleBotEvent(eventsAPI, client, res)
 				}
 			}
 		}
 	}(ctx, client)
 
 	client.socketClient.Run()
-
-	return chatChannel
 }
 
-func HandleBotEvent(event slackevents.EventsAPIEvent, client *Client, chatChannel chan Message) error {
+func HandleBotEvent(event slackevents.EventsAPIEvent, client *Client, chatChannel chan Message) {
 
 	switch event.Type {
 
@@ -102,28 +82,34 @@ func HandleBotEvent(event slackevents.EventsAPIEvent, client *Client, chatChanne
 
 		switch evnt := innerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
-			err := HandleBotEventMessage(evnt, client.api, client.botId, chatChannel)
-			if err != nil {
-				return err
-			}
-			//case *slackevents.AppMentionEvent:
-			//	printAppMentionEventInfo(evnt)
+			HandleBotEventMessage(evnt, client.api, client.botId, chatChannel)
 		}
 	default:
-		return errors.New("unsupported event type")
+		log.Println(errors.New("unsupported event type"))
 	}
-	return nil
 }
 
-func HandleBotEventMessage(event *slackevents.MessageEvent, api *slack.Client, botId string, chatChannel chan Message) error {
+func HandleBotEventMessage(event *slackevents.MessageEvent, api *slack.Client, botId string, chatChannel chan Message) {
 
-	if botId == event.User {
-		return nil
+	if botId != event.User {
+		text := strings.ToLower(event.Text)
+		chatChannel <- Message{User: event.User, Channel: ChannelID(event.Channel), Text: text}
+	}
+}
+
+func (client *Client) SendMessage(message Message) {
+	user, err := client.api.GetUserInfo(message.User)
+	if err != nil {
+		log.Printf("failed to post message: %v\n", err)
 	}
 
-	text := strings.ToLower(event.Text)
+	attachment := slack.Attachment{}
+	attachment.Text = fmt.Sprintf("Hello %s! you msg: %s", user.Name, message.Text)
+	attachment.Pretext = "Test answer"
+	attachment.Color = "#4af030"
 
-	chatChannel <- Message{User: event.User, Channel: ChannelID(event.Channel), Text: text}
-
-	return nil
+	_, _, errPostMsg := client.api.PostMessage(string(message.Channel), slack.MsgOptionAttachments(attachment))
+	if errPostMsg != nil {
+		log.Printf("failed to post message: %v\n", errPostMsg)
+	}
 }

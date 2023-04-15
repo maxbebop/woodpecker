@@ -12,11 +12,13 @@ func main() {
 	fmt.Println("start task managment bot - woodpicker")
 	config := config.New("config.yml")
 	client := slack.New(config.Slack.OAuthToken, config.Slack.AppToken, config.Slack.AppUserId)
-	for message := range client.GetMessages() {
-		log.Printf("msg ->  %v\n", message)
+	chatChannel := make(chan slack.Message)
+	go client.GetMessages(chatChannel)
+	for message := range chatChannel {
 		if message.Error != nil {
 			log.Fatal(message.Error)
 		}
-		log.Printf("msg -> user: %v; text: %v\n", message.User, message.Text)
+		log.Printf("msg from user: %v; text: %v\n", message.User, message.Text)
+		client.SendMessage(message)
 	}
 }

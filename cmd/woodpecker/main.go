@@ -7,7 +7,7 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 
-	"github.com/maxbebop/woodpecker/internal/configs"
+	config "github.com/maxbebop/woodpecker/internal/configs"
 	"github.com/maxbebop/woodpecker/pkg/slackclient"
 	"github.com/maxbebop/woodpecker/pkg/socketmodewrap"
 )

@@ -15,7 +15,7 @@ import (
 func main() {
 	log := structlog.New()
 
-	log.Info("start task managment bot - woodpecker")
+	log.Info("start task management bot - woodpecker")
 
 	cfg := config.New("config.yml")
 

@@ -10,5 +10,5 @@ require (
 
 require (
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/stretchr/testify v1.8.1 // indirect
 )

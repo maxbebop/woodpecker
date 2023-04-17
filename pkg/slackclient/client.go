@@ -3,7 +3,6 @@ package slackclient
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/slack-go/slack"
@@ -26,6 +25,7 @@ type Client struct {
 	api          SlackClient
 	socketClient SocketmodeClient
 	botId        string
+	log          Logger
 }
 
 type Message struct {
@@ -37,8 +37,8 @@ type Message struct {
 
 type ChannelID string
 
-func New(api SlackClient, sockClient SocketmodeClient, appUserId string) *Client {
-	return &Client{api: api, socketClient: sockClient, botId: appUserId}
+func New(api SlackClient, sockClient SocketmodeClient, appUserId string, log Logger) *Client {
+	return &Client{api: api, socketClient: sockClient, botId: appUserId, log: log}
 }
 
 type Logger interface {
@@ -46,35 +46,35 @@ type Logger interface {
 	Err(msg interface{}, keyvals ...interface{}) error
 }
 
-func (c *Client) GetMessagesLoop(ctx context.Context, res chan<- Message, log Logger) {
+func (c *Client) GetMessagesLoop(ctx context.Context, res chan<- Message) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("Shutting down socketmode listener")
+			c.log.Printf("Shutting down socketmode listener")
 			return
 		case event := <-c.socketClient.EventsIn():
-			log.Printf("event: %v\n", event)
+			c.log.Printf("event: %v\n", event)
 
 			switch event.Type {
 			case socketmode.EventTypeEventsAPI:
 				eventsAPI, ok := event.Data.(slackevents.EventsAPIEvent)
 				if !ok {
-					log.Printf("Could not type cast the event to the EventsAPI: %T: %+v\n", event, event)
+					c.log.Printf("Could not type cast the event to the EventsAPI: %T: %+v\n", event, event)
 					continue
 				}
 
 				c.socketClient.Ack(*event.Request)
-				c.handleBotEvent(eventsAPI, res, log)
+				c.handleBotEvent(eventsAPI, res)
 			}
 		}
 	}
 }
 
 func (c *Client) Run() error {
-	return c.socketClient.Run()
+	return c.socketClient.Run() //nolint:wrapcheck // intentional
 }
 
-func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel chan<- Message, log Logger) {
+func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel chan<- Message) {
 	switch event.Type {
 	case slackevents.CallbackEvent:
 		innerEvent := event.InnerEvent
@@ -83,10 +83,10 @@ func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel ch
 		case *slackevents.MessageEvent:
 			handleBotEventMessage(evnt, c.api, c.botId, chatChannel)
 		default:
-			log.Err("unsupported inner event type", "type", evnt)
+			c.log.Err("unsupported inner event type", "type", evnt) //nolint:errcheck // intentional
 		}
 	default:
-		log.Printf("unsupported event type", "type", event.Type)
+		c.log.Printf("unsupported event type", "type", event.Type)
 	}
 }
 
@@ -105,7 +105,7 @@ func handleBotEventMessage(
 func (c *Client) SendMessage(message Message) error {
 	user, err := c.api.GetUserInfo(message.User)
 	if err != nil {
-		log.Printf("failed to post message: %v\n", err)
+		c.log.Err("failed to post message: %v\n", err)
 	}
 
 	attachment := slack.Attachment{}
@@ -115,5 +115,5 @@ func (c *Client) SendMessage(message Message) error {
 
 	_, _, errPostMsg := c.api.PostMessage(string(message.Channel), slack.MsgOptionAttachments(attachment))
 
-	return errPostMsg
+	return errPostMsg //nolint:wrapcheck // intentional
 }

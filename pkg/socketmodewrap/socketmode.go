@@ -13,5 +13,5 @@ func New(c *socketmode.Client) *SocketmodeClient {
 }
 
 func (c *SocketmodeClient) EventsIn() <-chan socketmode.Event          { return c.c.Events }
-func (c *SocketmodeClient) Run() error                                 { return c.c.Run() }
+func (c *SocketmodeClient) Run() error                                 { return c.c.Run() } //nolint:wrapcheck // intentional
 func (c *SocketmodeClient) Ack(req socketmode.Request, payload ...any) { c.c.Ack(req, payload...) }

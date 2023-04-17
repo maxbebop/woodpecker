@@ -31,14 +31,14 @@ func main() {
 		socketmode.OptionLog(socketmodewrap.Log{Logger: log}),
 	)
 
-	client := slackclient.New(slackClient, socketmodewrap.New(socketClient), cfg.Slack.AppUserId)
+	client := slackclient.New(slackClient, socketmodewrap.New(socketClient), cfg.Slack.AppUserId, log)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	chatChannel := make(chan slackclient.Message)
 
-	go client.GetMessagesLoop(ctx, chatChannel, log)
+	go client.GetMessagesLoop(ctx, chatChannel)
 	go processMsgLoop(ctx, client, chatChannel, log)
 
 	if err := client.Run(); err != nil {
@@ -61,7 +61,6 @@ func processMsgLoop(
 			processMsg(slackClient, msg, log)
 		}
 	}
-
 }
 
 func processMsg(slackClient *slackclient.Client, msg slackclient.Message, log *structlog.Logger) {
@@ -72,6 +71,6 @@ func processMsg(slackClient *slackclient.Client, msg slackclient.Message, log *s
 	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
 	if err := slackClient.SendMessage(msg); err != nil {
-		log.Err("send message", "err", err)
+		log.Err("send message", "err", err) //nolint:errcheck // intentional
 	}
 }

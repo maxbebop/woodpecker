@@ -1,4 +1,4 @@
-module woodpecker
+module github.com/maxbebop/woodpecker
 
 go 1.19
 

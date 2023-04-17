@@ -1,10 +1,9 @@
-package slack
+package slackclient
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/slack-go/slack"
@@ -13,15 +12,19 @@ import (
 )
 
 type SlackClient interface {
+	GetUserInfo(user string) (*slack.User, error)
+	PostMessage(channelID string, options ...slack.MsgOption) (string, string, error)
 }
 
-type SockClient interface {
+type SocketmodeClient interface {
 	Ack(req socketmode.Request, payload ...interface{})
+	Run() error
+	EventsIn() <-chan socketmode.Event
 }
 
 type Client struct {
-	api          *slack.Client
-	socketClient *socketmode.Client
+	api          SlackClient
+	socketClient SocketmodeClient
 	botId        string
 }
 
@@ -34,16 +37,8 @@ type Message struct {
 
 type ChannelID string
 
-func New(oauthToken string, appToken string, appUserId string) *Client {
-	api := slack.New(oauthToken, slack.OptionDebug(true), slack.OptionAppLevelToken(appToken))
-
-	socketClient := socketmode.New(
-		api,
-		socketmode.OptionDebug(true),
-		socketmode.OptionLog(log.New(os.Stdout, "socketmode: ", log.Lshortfile|log.LstdFlags)),
-	)
-
-	return &Client{api: api, socketClient: socketClient, botId: appUserId}
+func New(api SlackClient, sockClient SocketmodeClient, appUserId string) *Client {
+	return &Client{api: api, socketClient: sockClient, botId: appUserId}
 }
 
 type Logger interface {
@@ -51,13 +46,13 @@ type Logger interface {
 	Err(msg interface{}, keyvals ...interface{}) error
 }
 
-func (c *Client) GetMessagesLoop(ctx context.Context, res chan Message, log Logger) {
+func (c *Client) GetMessagesLoop(ctx context.Context, res chan<- Message, log Logger) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Printf("Shutting down socketmode listener")
 			return
-		case event := <-c.socketClient.Events:
+		case event := <-c.socketClient.EventsIn():
 			log.Printf("event: %v\n", event)
 
 			switch event.Type {
@@ -79,7 +74,7 @@ func (c *Client) Run() error {
 	return c.socketClient.Run()
 }
 
-func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel chan Message, log Logger) {
+func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel chan<- Message, log Logger) {
 	switch event.Type {
 	case slackevents.CallbackEvent:
 		innerEvent := event.InnerEvent
@@ -97,9 +92,9 @@ func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel ch
 
 func handleBotEventMessage(
 	event *slackevents.MessageEvent,
-	_ *slack.Client,
+	_ SlackClient,
 	botId string,
-	chatChannel chan Message,
+	chatChannel chan<- Message,
 ) {
 	if botId != event.User {
 		text := strings.ToLower(event.Text)

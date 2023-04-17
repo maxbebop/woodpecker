@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/powerman/structlog"
-	"github.com/sourcegraph/conc"
+	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/socketmode"
 
-	"woodpecker/internal/configs"
-	"woodpecker/pkg/slack"
+	"github.com/maxbebop/woodpecker/internal/configs"
+	"github.com/maxbebop/woodpecker/pkg/slackclient"
+	"github.com/maxbebop/woodpecker/pkg/socketmodewrap"
 )
 
 func main() {
@@ -15,42 +17,61 @@ func main() {
 
 	log.Info("start task managment bot - woodpecker")
 
-	config := config.New("config.yml")
+	cfg := config.New("config.yml")
 
-	client := slack.New(
-		config.Slack.OAuthToken,
-		config.Slack.AppToken,
-		config.Slack.AppUserId,
+	slackClient := slack.New(
+		cfg.Slack.OAuthToken,
+		slack.OptionDebug(true),
+		slack.OptionAppLevelToken(cfg.Slack.AppToken),
 	)
+
+	socketClient := socketmode.New(
+		slackClient,
+		socketmode.OptionDebug(true),
+		socketmode.OptionLog(socketmodewrap.Log{Logger: log}),
+	)
+
+	client := slackclient.New(slackClient, socketmodewrap.New(socketClient), cfg.Slack.AppUserId)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var wg conc.WaitGroup
+	chatChannel := make(chan slackclient.Message)
 
-	chatChannel := make(chan slack.Message)
+	go client.GetMessagesLoop(ctx, chatChannel, log)
+	go processMsgLoop(ctx, client, chatChannel, log)
 
-	wg.Go(func() { client.GetMessagesLoop(ctx, chatChannel, log) })
+	if err := client.Run(); err != nil {
+		log.Fatal("client run", "err", err)
+	}
+}
 
-	wg.Go(func() {
-		if err := client.Run(); err != nil {
-			log.Err("client run", "err", err)
+func processMsgLoop(
+	ctx context.Context,
+	slackClient *slackclient.Client,
+	in <-chan slackclient.Message,
+	log *structlog.Logger,
+) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("Shutting down processing loop")
+			return
+		case msg := <-in:
+			processMsg(slackClient, msg, log)
 		}
-	})
+	}
 
-	wg.Go(func() {
-		for message := range chatChannel {
-			if message.Error != nil {
-				log.Fatal(message.Error)
-			}
+}
 
-			log.Debug("msg", "from", message.User, "text", message.Text)
+func processMsg(slackClient *slackclient.Client, msg slackclient.Message, log *structlog.Logger) {
+	if msg.Error != nil {
+		log.Fatal(msg.Error)
+	}
 
-			if err := client.SendMessage(message); err != nil {
-				log.Err("send message", "err", err)
-			}
-		}
-	})
+	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
-	wg.Wait()
+	if err := slackClient.SendMessage(msg); err != nil {
+		log.Err("send message", "err", err)
+	}
 }

@@ -1,4 +1,3 @@
 slack:
-  oauth_token: xxx
-  app_token: xxx
-  app_user_id: xxx
+  oauth_token: xxx  #Bot User OAuth Token
+  app_token: xxx    #app level token

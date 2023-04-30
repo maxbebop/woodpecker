@@ -35,7 +35,7 @@ const (
 
 func New(slackConfig *config.Config) *Service {
 
-	client := slack.New(slackConfig.Slack.OAuthToken, slackConfig.Slack.AppToken, slackConfig.Slack.AppUserId)
+	client := slack.New(slackConfig.Slack.OAuthToken, slackConfig.Slack.AppToken)
 	return &Service{client: client}
 }
 

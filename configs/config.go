@@ -14,7 +14,6 @@ type Config struct {
 type slack struct {
 	OAuthToken string `yaml:"oauth_token"`
 	AppToken   string `yaml:"app_token"`
-	AppUserId  string `yaml:"app_user_id"`
 }
 
 func New(filename string) *Config {
@@ -40,11 +39,6 @@ func New(filename string) *Config {
 
 	if config.Slack.AppToken == "" {
 		log.Fatal("error: app_token is empty")
-		return nil
-	}
-
-	if config.Slack.AppUserId == "" {
-		log.Fatal("error: app_user_id is empty")
 		return nil
 	}
 

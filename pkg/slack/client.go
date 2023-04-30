@@ -16,7 +16,6 @@ import (
 type Client struct {
 	api          *slack.Client
 	socketClient *socketmode.Client
-	botId        string
 }
 
 type Message struct {
@@ -37,8 +36,7 @@ type OutMessage struct {
 
 type ChannelID string
 
-func New(oauthToken string, appToken string, appUserId string) *Client {
-	log.Printf("oauthToken: %v, appToken: %v, appUserId: %v\n", oauthToken, appToken, appUserId)
+func New(oauthToken string, appToken string) *Client {
 	api := slack.New(oauthToken, slack.OptionDebug(true), slack.OptionAppLevelToken(appToken))
 
 	socketClient := socketmode.New(
@@ -47,7 +45,7 @@ func New(oauthToken string, appToken string, appUserId string) *Client {
 		socketmode.OptionLog(log.New(os.Stdout, "socketmode: ", log.Lshortfile|log.LstdFlags)),
 	)
 
-	return &Client{api: api, socketClient: socketClient, botId: appUserId}
+	return &Client{api: api, socketClient: socketClient}
 }
 
 func (client *Client) GetMessages(res chan Message) {
@@ -73,7 +71,7 @@ func (client *Client) GetMessages(res chan Message) {
 						continue
 					}
 					client.socketClient.Ack(*event.Request)
-					HandleBotEvent(eventsAPI, client, res)
+					handleBotEvent(eventsAPI, client, res)
 				}
 			}
 		}
@@ -82,7 +80,7 @@ func (client *Client) GetMessages(res chan Message) {
 	client.socketClient.Run()
 }
 
-func HandleBotEvent(event slackevents.EventsAPIEvent, client *Client, chatChannel chan Message) {
+func handleBotEvent(event slackevents.EventsAPIEvent, client *Client, chatChannel chan Message) {
 
 	switch event.Type {
 
@@ -92,27 +90,22 @@ func HandleBotEvent(event slackevents.EventsAPIEvent, client *Client, chatChanne
 
 		switch evnt := innerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
-			HandleBotEventMessage(evnt, client.api, client.botId, chatChannel)
+			handleBotEventMessage(evnt, client.api, chatChannel)
 		}
 	default:
 		log.Println(errors.New("unsupported event type"))
 	}
 }
 
-func HandleBotEventMessage(event *slackevents.MessageEvent, api *slack.Client, botId string, chatChannel chan Message) {
+func handleBotEventMessage(event *slackevents.MessageEvent, api *slack.Client, chatChannel chan Message) {
 
-	if botId != event.User {
+	if event.BotID == "" {
 		text := strings.ToLower(event.Text)
 		chatChannel <- Message{User: event.User, Channel: ChannelID(event.Channel), Text: text}
 	}
 }
 
 func (client *Client) SendMessage(message OutMessage) {
-	log.Printf("message out: %v\n", message)
-	err := message.validate(client)
-	if err != nil {
-		log.Printf("failed to send message: %v\n", err)
-	}
 
 	user, err := client.api.GetUserInfo(message.User)
 	if err != nil {
@@ -123,18 +116,9 @@ func (client *Client) SendMessage(message OutMessage) {
 	attachment.Text = fmt.Sprintf("%s -> %s", user.Name, message.Text)
 	attachment.Pretext = message.Pretext
 	attachment.Color = message.Color
-	attachment.AuthorID = client.botId
 
 	_, _, errPostMsg := client.api.PostMessage(string(message.Channel), slack.MsgOptionAttachments(attachment))
 	if errPostMsg != nil {
 		log.Printf("failed to post message: %v\n", errPostMsg)
 	}
-}
-
-func (message OutMessage) validate(client *Client) error {
-	if message.User == client.botId {
-		return errors.New("failed to post message: sending a message to yourself")
-	}
-
-	return nil
 }

@@ -26,9 +26,19 @@ type Message struct {
 	Error   error
 }
 
+type OutMessage struct {
+	User    string
+	Channel ChannelID
+	Text    string
+	Pretext string
+	Color   string
+	Error   error
+}
+
 type ChannelID string
 
 func New(oauthToken string, appToken string, appUserId string) *Client {
+	log.Printf("oauthToken: %v, appToken: %v, appUserId: %v\n", oauthToken, appToken, appUserId)
 	api := slack.New(oauthToken, slack.OptionDebug(true), slack.OptionAppLevelToken(appToken))
 
 	socketClient := socketmode.New(
@@ -97,19 +107,34 @@ func HandleBotEventMessage(event *slackevents.MessageEvent, api *slack.Client, b
 	}
 }
 
-func (client *Client) SendMessage(message Message) {
+func (client *Client) SendMessage(message OutMessage) {
+	log.Printf("message out: %v\n", message)
+	err := message.validate(client)
+	if err != nil {
+		log.Printf("failed to send message: %v\n", err)
+	}
+
 	user, err := client.api.GetUserInfo(message.User)
 	if err != nil {
-		log.Printf("failed to post message: %v\n", err)
+		log.Printf("failed to get user: %v\n", err)
 	}
 
 	attachment := slack.Attachment{}
-	attachment.Text = fmt.Sprintf("Hello %s! you msg: %s", user.Name, message.Text)
-	attachment.Pretext = "Test answer"
-	attachment.Color = "#4af030"
+	attachment.Text = fmt.Sprintf("%s -> %s", user.Name, message.Text)
+	attachment.Pretext = message.Pretext
+	attachment.Color = message.Color
+	attachment.AuthorID = client.botId
 
 	_, _, errPostMsg := client.api.PostMessage(string(message.Channel), slack.MsgOptionAttachments(attachment))
 	if errPostMsg != nil {
 		log.Printf("failed to post message: %v\n", errPostMsg)
 	}
+}
+
+func (message OutMessage) validate(client *Client) error {
+	if message.User == client.botId {
+		return errors.New("failed to post message: sending a message to yourself")
+	}
+
+	return nil
 }

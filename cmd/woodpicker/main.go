@@ -3,22 +3,35 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	config "woodpecker/configs"
-
-	"woodpecker/pkg/slack"
+	"woodpecker/internal/services/slack"
 )
 
 func main() {
 	fmt.Println("start task managment bot - woodpicker")
-	config := config.New("config.yml")
-	client := slack.New(config.Slack.OAuthToken, config.Slack.AppToken, config.Slack.AppUserId)
-	chatChannel := make(chan slack.Message)
-	go client.GetMessages(chatChannel)
-	for message := range chatChannel {
-		if message.Error != nil {
-			log.Fatal(message.Error)
+	config := config.New("slack.config.yml")
+
+	slackService := slack.New(config)
+	inMsgChannel := make(chan slack.Message)
+	go slackService.GetMessages(inMsgChannel)
+	for inMsg := range inMsgChannel {
+		if inMsg.Error != nil {
+			log.Fatal(inMsg.Error)
 		}
-		log.Printf("msg from user: %v; text: %v\n", message.User, message.Text)
-		client.SendMessage(message)
+
+		outMsg := slack.OutMessage{Message: inMsg}
+		//outMsg.Pretext = "Test answer"
+
+		outMsg.Type = slack.Common
+
+		if strings.Contains(inMsg.Text, "ok") {
+			outMsg.Type = slack.Common
+		} else if strings.Contains(inMsg.Text, "attention") {
+			outMsg.Type = slack.Attention
+		} else if strings.Contains(inMsg.Text, "warning") {
+			outMsg.Type = slack.Warning
+		}
+		slackService.SendMessage(outMsg)
 	}
 }

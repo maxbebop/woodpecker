@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -19,7 +18,6 @@ type slack struct {
 }
 
 func New(filename string) *Config {
-	fmt.Println("Loading config")
 
 	file, err := os.ReadFile(filename)
 	if err != nil {

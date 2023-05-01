@@ -1,26 +1,24 @@
-package chatservice
+package chatservice_test
 
-/*
-func TestNew(t *testing.T) {
-	chatBot := mocks.NewChatBot(t)
-	want := mockNewServece(chatBot)
-	bot := new(chatBot)
-	require.Equal(t, bot, want, "creating chat servese")
+import (
+	"context"
+	"testing"
+	chatservice "woodpecker/internal/services/chat"
+	"woodpecker/mocks"
 
-}
+	"github.com/powerman/structlog"
+)
 
 func TestStartChat(t *testing.T) {
 
-	inMsgChannel := make(chan slack.Message)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	log := structlog.New()
+	inMsgChannel := make(chan chatservice.Message)
 	chatBot := &mocks.ChatBot{}
-	go chatBot.On("GetMessages", inMsgChannel)
-	outMsg := slack.OutMessage{Message: slack.Message{}}
-	outMsg.Type = slack.Common
+	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, log)
+	outMsg := chatservice.OutMessage{Message: chatservice.Message{}}
+	outMsg.Type = chatservice.Common
 	chatBot.On("SendMessage", outMsg)
 	close(inMsgChannel)
 }
-
-func mockNewServece(chatBot ChatBot) *service {
-	return &service{chatBot: chatBot}
-}
-*/

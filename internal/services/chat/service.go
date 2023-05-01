@@ -6,10 +6,6 @@ import (
 	"github.com/powerman/structlog"
 )
 
-type service struct {
-	chatBot ChatBot
-}
-
 type Message struct {
 	User    string
 	Channel string
@@ -53,10 +49,6 @@ func StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	}
 
 	return nil
-}
-
-func new(chatBot ChatBot) *service {
-	return &service{chatBot: chatBot}
 }
 
 func processMsgLoop(

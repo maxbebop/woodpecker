@@ -113,7 +113,8 @@ func handleBotEventMessage(
 func (c *Client) SendMessage(message OutMessage) error {
 	user, err := c.api.GetUserInfo(message.User)
 	if err != nil {
-		c.log.Err("failed to post message: %v\n", err)
+		logErr(c.log, fmt.Sprintf("failed to post message: %v\n", err))
+		return err
 	}
 
 	attachment := slack.Attachment{}
@@ -124,4 +125,10 @@ func (c *Client) SendMessage(message OutMessage) error {
 	_, _, errPostMsg := c.api.PostMessage(string(message.Channel), slack.MsgOptionAttachments(attachment))
 
 	return errPostMsg //nolint:wrapcheck // intentional
+}
+
+func logErr(log Logger, text string) {
+	if log != nil {
+		log.Err(text)
+	}
 }

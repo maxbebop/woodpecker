@@ -20,7 +20,6 @@ type Service struct {
 }
 
 func New(cfg *config.Config, log *structlog.Logger) *Service {
-
 	slackClient := slack.New(
 		cfg.Slack.OAuthToken,
 		slack.OptionDebug(true),
@@ -34,7 +33,8 @@ func New(cfg *config.Config, log *structlog.Logger) *Service {
 	)
 
 	client := slackclient.New(slackClient, socketmodewrap.New(socketClient), log)
-	return &Service{client: client}
+	service := Service{client: client}
+	return &service
 }
 
 func (service *Service) Run() error {
@@ -43,7 +43,10 @@ func (service *Service) Run() error {
 	return err
 }
 
-func (service *Service) GetMessagesLoop(ctx context.Context, inChatMsgChannel chan chatservice.Message, log *structlog.Logger) {
+func (service *Service) GetMessagesLoop(
+	ctx context.Context,
+	inChatMsgChannel chan chatservice.Message,
+	log *structlog.Logger) {
 
 	slackChatChannel := make(chan slackclient.Message)
 
@@ -63,7 +66,11 @@ func processMsgLoop(
 			log.Printf("Shutting down processing loop")
 			return
 		case msg := <-slackChatChannel:
-			inChatMsgChannel <- chatservice.Message{User: msg.User, Channel: string(msg.Channel), Text: msg.Text, Error: msg.Error}
+			inChatMsgChannel <- chatservice.Message{
+				User:    msg.User,
+				Channel: string(msg.Channel),
+				Text:    msg.Text,
+				Error:   msg.Error}
 		}
 	}
 }
@@ -80,7 +87,11 @@ func (service *Service) SendMessage(msg chatservice.OutMessage) error {
 }
 
 func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {
-	slackOutMsg := slackclient.OutMessage{User: msg.Message.User, Channel: slackclient.ChannelID(msg.Message.Channel), Text: msg.Message.Text, Pretext: msg.Pretext}
+	slackOutMsg := slackclient.OutMessage{
+		User:    msg.Message.User,
+		Channel: slackclient.ChannelID(msg.Message.Channel),
+		Text:    msg.Message.Text,
+		Pretext: msg.Pretext}
 	slackOutMsg.Color = getMsgColor(msg.Type)
 
 	if strings.TrimSpace(slackOutMsg.Pretext) == "" {

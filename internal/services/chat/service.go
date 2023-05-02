@@ -35,7 +35,6 @@ type ChatBot interface {
 }
 
 func StartChat(chatBot ChatBot, log *structlog.Logger) error {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

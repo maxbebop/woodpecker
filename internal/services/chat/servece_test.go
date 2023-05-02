@@ -5,20 +5,17 @@ import (
 	"testing"
 	chatservice "woodpecker/internal/services/chat"
 	"woodpecker/mocks"
-
-	"github.com/powerman/structlog"
 )
 
 func TestStartChat(t *testing.T) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	log := structlog.New()
+	//log := structlog.New()
 	inMsgChannel := make(chan chatservice.Message)
 	chatBot := &mocks.ChatBot{}
-	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, log)
-	outMsg := chatservice.OutMessage{Message: chatservice.Message{}}
-	outMsg.Type = chatservice.Common
-	chatBot.On("SendMessage", outMsg)
+	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, nil)
+	chatBot.On("SendMessage", chatservice.OutMessage{
+		Message: chatservice.Message{},
+		Type:    chatservice.Common})
 	close(inMsgChannel)
 }

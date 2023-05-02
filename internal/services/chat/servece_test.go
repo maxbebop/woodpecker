@@ -10,7 +10,7 @@ import (
 func TestStartChat(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	//log := structlog.New()
+	// log := structlog.New()
 	inMsgChannel := make(chan chatservice.Message)
 	chatBot := &mocks.ChatBot{}
 	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, nil)

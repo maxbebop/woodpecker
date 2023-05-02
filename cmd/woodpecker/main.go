@@ -20,6 +20,5 @@ func main() {
 
 	if err != nil {
 		log.PrintErr(err)
-
 	}
 }

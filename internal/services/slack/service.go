@@ -47,7 +47,6 @@ func (service *Service) GetMessagesLoop(
 	ctx context.Context,
 	inChatMsgChannel chan chatservice.Message,
 	log *structlog.Logger) {
-
 	slackChatChannel := make(chan slackclient.Message)
 
 	go service.client.GetMessagesLoop(ctx, slackChatChannel)
@@ -102,7 +101,6 @@ func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {
 }
 
 func getMsgPretext(msgType chatservice.MessageType) string {
-
 	switch msgType {
 	case chatservice.Warning:
 		return "Warning"
@@ -114,7 +112,6 @@ func getMsgPretext(msgType chatservice.MessageType) string {
 }
 
 func getMsgColor(msgType chatservice.MessageType) string {
-
 	switch msgType {
 	case chatservice.Warning:
 		return "#ff9900"

@@ -63,8 +63,7 @@ func (c *Client) GetMessagesLoop(ctx context.Context, res chan<- Message) {
 		case event := <-c.socketClient.EventsIn():
 			c.log.Printf("event: %v\n", event)
 
-			switch event.Type {
-			case socketmode.EventTypeEventsAPI:
+			if socketmode.EventTypeEventsAPI == event.Type {
 				eventsAPI, ok := event.Data.(slackevents.EventsAPIEvent)
 				if !ok {
 					c.log.Printf("Could not type cast the event to the EventsAPI: %T: %+v\n", event, event)
@@ -89,7 +88,7 @@ func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel ch
 
 		switch evnt := innerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
-			handleBotEventMessage(evnt, c.api, c, chatChannel)
+			handleBotEventMessage(evnt, chatChannel)
 		default:
 			c.log.Err("unsupported inner event type", "type", evnt) //nolint:errcheck // intentional
 		}
@@ -98,11 +97,7 @@ func (c *Client) handleBotEvent(event slackevents.EventsAPIEvent, chatChannel ch
 	}
 }
 
-func handleBotEventMessage(
-	event *slackevents.MessageEvent,
-	_ SlackClient,
-	c *Client,
-	chatChannel chan<- Message,
+func handleBotEventMessage(event *slackevents.MessageEvent, chatChannel chan<- Message,
 ) {
 	if event.BotID == "" {
 		text := strings.ToLower(event.Text)

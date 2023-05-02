@@ -48,12 +48,11 @@ func (service *Service) GetMessagesLoop(ctx context.Context, inChatMsgChannel ch
 	slackChatChannel := make(chan slackclient.Message)
 
 	go service.client.GetMessagesLoop(ctx, slackChatChannel)
-	go processMsgLoop(ctx, service.client, slackChatChannel, inChatMsgChannel, log)
+	go processMsgLoop(ctx, slackChatChannel, inChatMsgChannel, log)
 }
 
 func processMsgLoop(
 	ctx context.Context,
-	slackClient *slackclient.Client,
 	slackChatChannel chan slackclient.Message,
 	inChatMsgChannel chan chatservice.Message,
 	log *structlog.Logger,

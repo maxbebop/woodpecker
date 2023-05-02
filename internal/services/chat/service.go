@@ -45,7 +45,7 @@ func StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	go processMsgLoop(ctx, chatBot, chatChannel, log)
 
 	if err := chatBot.Run(); err != nil {
-		log.Fatal("client run", "err", err)
+		return log.Err("client run", "err", err)
 	}
 
 	return nil

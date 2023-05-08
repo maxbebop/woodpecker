@@ -59,6 +59,7 @@ func (c *Client) GetMessagesLoop(ctx context.Context, res chan<- Message) {
 		select {
 		case <-ctx.Done():
 			c.log.Printf("Shutting down socketmode listener")
+
 			return
 		case event := <-c.socketClient.EventsIn():
 			c.log.Printf("event: %v\n", event)

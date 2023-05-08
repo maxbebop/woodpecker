@@ -15,7 +15,12 @@ func TestStartChat(t *testing.T) {
 	chatBot := &mocks.ChatBot{}
 	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, nil)
 	chatBot.On("SendMessage", chatservice.OutMessage{
-		Message: chatservice.Message{},
+		Message: chatservice.Message{
+			User:    "",
+			Channel: "",
+			Text:    "",
+			Error:   nil,
+		},
 		Type:    chatservice.Common,
 		Pretext: "",
 		Error:   nil})

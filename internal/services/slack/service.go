@@ -20,7 +20,7 @@ type Service struct {
 	client *slackclient.Client
 }
 
-var isNilErr = errors.New("is nil")
+var errNil = errors.New("is nil")
 
 func New(cfg *config.Config, log *structlog.Logger) *Service {
 	slackClient := slack.New(
@@ -86,7 +86,7 @@ func (service *Service) SendMessage(msg chatservice.OutMessage) error {
 		return fmt.Errorf("send message. %w", errPostMsg)
 	}
 
-	return fmt.Errorf("service.client %w", isNilErr)
+	return fmt.Errorf("service.client %w", errNil)
 }
 
 func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {

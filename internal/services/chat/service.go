@@ -1,37 +1,85 @@
-package chat
+package chatservice
 
 import (
-	"woodpecker/internal/services/slack"
+	"context"
+	"fmt"
+
+	"github.com/powerman/structlog"
 )
 
-type service struct {
-	chatBot ChatBot
+type Message struct {
+	User    string
+	Channel string
+	Text    string
+	Error   error
 }
+
+type OutMessage struct {
+	Message Message
+	Pretext string
+	Type    MessageType
+	Error   error
+}
+
+type MessageType int
+
+const (
+	Common MessageType = iota
+	Warning
+	Attention
+)
 
 type ChatBot interface {
-	GetMessages(inMsgChannel chan slack.Message)
-	SendMessage(msg slack.OutMessage)
+	GetMessagesLoop(ctx context.Context, inMsgChannel chan Message, log *structlog.Logger)
+	SendMessage(msg OutMessage) error
+	Run() error
 }
 
-func StartChat(chatBot ChatBot) error {
-	service := new(chatBot)
+func StartChat(chatBot ChatBot, log *structlog.Logger) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	inMsgChannel := make(chan slack.Message)
-	go service.chatBot.GetMessages(inMsgChannel)
-	for inMsg := range inMsgChannel {
-		if inMsg.Error != nil {
-			return inMsg.Error
-		}
+	chatChannel := make(chan Message)
 
-		outMsg := slack.OutMessage{Message: inMsg}
-		outMsg.Type = slack.Common
+	go chatBot.GetMessagesLoop(ctx, chatChannel, log)
+	go processMsgLoop(ctx, chatBot, chatChannel, log)
 
-		service.chatBot.SendMessage(outMsg)
+	if err := chatBot.Run(); err != nil {
+		return fmt.Errorf("%w", log.Err("client run", "err", err))
 	}
 
 	return nil
 }
 
-func new(chatBot ChatBot) *service {
-	return &service{chatBot: chatBot}
+func processMsgLoop(
+	ctx context.Context,
+	chatBot ChatBot,
+	in <-chan Message,
+	log *structlog.Logger,
+) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("Shutting down processing loop")
+
+			return
+		case msg := <-in:
+			log.Debug("processMsgLoop", "from", msg.User, "text", msg.Text)
+			processMsg(chatBot, msg, log)
+		}
+	}
+}
+
+func processMsg(chatBot ChatBot, msg Message, log *structlog.Logger) {
+	if msg.Error != nil {
+		log.Fatal(msg.Error)
+	}
+
+	log.Debug("msg", "from", msg.User, "text", msg.Text)
+
+	outMsg := OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
+
+	if err := chatBot.SendMessage(outMsg); err != nil {
+		log.Err("send message", "err", err) //nolint:errcheck // intentional
+	}
 }

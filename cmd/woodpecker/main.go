@@ -2,13 +2,23 @@ package main
 
 import (
 	config "woodpecker/configs"
-	"woodpecker/internal/services/chat"
-	"woodpecker/internal/services/slack"
+	chatservice "woodpecker/internal/services/chat"
+	slackservice "woodpecker/internal/services/slack"
+
+	"github.com/powerman/structlog"
 )
 
 func main() {
-	config := config.New("slack.config.yml")
+	log := structlog.New()
 
-	slackService := slack.New(config)
-	chat.StartChat(slackService)
+	log.Info("start task management bot - woodpecker")
+
+	cfg := config.New("slack.config.yml")
+
+	chatBot := slackservice.New(cfg, log)
+	err := chatservice.StartChat(chatBot, log)
+
+	if err != nil {
+		log.PrintErr(err)
+	}
 }

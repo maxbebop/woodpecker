@@ -1,32 +1,28 @@
-package chat
+package chatservice_test
 
 import (
+	"context"
 	"testing"
-	"woodpecker/internal/services/slack"
+	chatservice "woodpecker/internal/services/chat"
 	"woodpecker/mocks"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestNew(t *testing.T) {
-	chatBot := mocks.NewChatBot(t)
-	want := mockNewServece(chatBot)
-	bot := new(chatBot)
-	require.Equal(t, bot, want, "creating chat servese")
-
-}
-
 func TestStartChat(t *testing.T) {
-
-	inMsgChannel := make(chan slack.Message)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// log := structlog.New()
+	inMsgChannel := make(chan chatservice.Message)
 	chatBot := &mocks.ChatBot{}
-	go chatBot.On("GetMessages", inMsgChannel)
-	outMsg := slack.OutMessage{Message: slack.Message{}}
-	outMsg.Type = slack.Common
-	chatBot.On("SendMessage", outMsg)
+	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, nil)
+	chatBot.On("SendMessage", chatservice.OutMessage{
+		Message: chatservice.Message{
+			User:    "",
+			Channel: "",
+			Text:    "",
+			Error:   nil,
+		},
+		Type:    chatservice.Common,
+		Pretext: "",
+		Error:   nil})
 	close(inMsgChannel)
-}
-
-func mockNewServece(chatBot ChatBot) *service {
-	return &service{chatBot: chatBot}
 }

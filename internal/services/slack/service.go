@@ -1,93 +1,128 @@
-package slack
+package slackservice
 
 import (
-	"log"
+	"context"
+	"errors"
+	"fmt"
 	"strings"
 	config "woodpecker/configs"
-	"woodpecker/pkg/slack"
+	chatservice "woodpecker/internal/services/chat"
+	slackclient "woodpecker/pkg/slack"
+	socketmodewrap "woodpecker/pkg/socketmodewrap"
+
+	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/socketmode"
+
+	"github.com/powerman/structlog"
 )
 
 type Service struct {
-	client *slack.Client
+	client *slackclient.Client
 }
 
-type Message struct {
-	User    string
-	Channel string
-	Text    string
-	Error   error
+var errNil = errors.New("is nil")
+
+func New(cfg *config.Config, log *structlog.Logger) *Service {
+	slackClient := slack.New(
+		cfg.Slack.OAuthToken,
+		slack.OptionDebug(true),
+		slack.OptionAppLevelToken(cfg.Slack.AppToken),
+	)
+
+	socketClient := socketmode.New(
+		slackClient,
+		socketmode.OptionDebug(true),
+		socketmode.OptionLog(socketmodewrap.Log{Logger: log}),
+	)
+
+	client := slackclient.New(slackClient, socketmodewrap.New(socketClient), log)
+	service := Service{client: client}
+
+	return &service
 }
 
-type OutMessage struct {
-	Message Message
-	Pretext string
-	Type    MessageType
-	Error   error
+func (service *Service) Run() error {
+	err := service.client.Run()
+
+	return fmt.Errorf("run %w", err)
 }
 
-type MessageType int
+func (service *Service) GetMessagesLoop(
+	ctx context.Context,
+	inChatMsgChannel chan chatservice.Message,
+	log *structlog.Logger) {
+	slackChatChannel := make(chan slackclient.Message)
 
-const (
-	Common MessageType = iota
-	Warning
-	Attention
-)
-
-func New(slackConfig *config.Config) *Service {
-
-	client := slack.New(slackConfig.Slack.OAuthToken, slackConfig.Slack.AppToken)
-	return &Service{client: client}
+	go service.client.GetMessagesLoop(ctx, slackChatChannel)
+	go processMsgLoop(ctx, slackChatChannel, inChatMsgChannel, log)
 }
 
-func (service *Service) GetMessages(inMsgChannel chan Message) {
+func processMsgLoop(
+	ctx context.Context,
+	slackChatChannel chan slackclient.Message,
+	inChatMsgChannel chan chatservice.Message,
+	log *structlog.Logger,
+) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("Shutting down processing loop")
 
-	chatChannel := make(chan slack.Message)
-	go service.client.GetMessages(chatChannel)
-	for msg := range chatChannel {
-		if msg.Error != nil {
-			log.Fatal(msg.Error)
+			return
+		case msg := <-slackChatChannel:
+			inChatMsgChannel <- chatservice.Message{
+				User:    msg.User,
+				Channel: string(msg.Channel),
+				Text:    msg.Text,
+				Error:   msg.Error}
 		}
-		inMsgChannel <- Message{User: msg.User, Channel: string(msg.Channel), Text: msg.Text, Error: msg.Error}
 	}
 }
 
-func (service *Service) SendMessage(msg OutMessage) {
+func (service *Service) SendMessage(msg chatservice.OutMessage) error {
 	if service.client != nil {
-		slackOutMsg := msg.createSlackOutMessage()
-		service.client.SendMessage(slackOutMsg)
+		slackOutMsg := createSlackOutMessage(msg)
+		errPostMsg := service.client.SendMessage(slackOutMsg)
+
+		return fmt.Errorf("send message. %w", errPostMsg)
 	}
+
+	return fmt.Errorf("service.client %w", errNil)
 }
 
-func (msg OutMessage) createSlackOutMessage() slack.OutMessage {
-	slackOutMsg := slack.OutMessage{User: msg.Message.User, Channel: slack.ChannelID(msg.Message.Channel), Text: msg.Message.Text, Pretext: msg.Pretext}
-	slackOutMsg.Color = msg.Type.getMsgColor()
+func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {
+	slackOutMsg := slackclient.OutMessage{
+		User:    msg.Message.User,
+		Channel: slackclient.ChannelID(msg.Message.Channel),
+		Text:    msg.Message.Text,
+		Pretext: msg.Pretext,
+		Color:   getMsgColor(msg.Type),
+		Error:   nil,
+	}
 
 	if strings.TrimSpace(slackOutMsg.Pretext) == "" {
-
-		slackOutMsg.Pretext = msg.Type.getMsgPretext()
+		slackOutMsg.Pretext = getMsgPretext(msg.Type)
 	}
 
 	return slackOutMsg
 }
 
-func (msgType MessageType) getMsgPretext() string {
-
+func getMsgPretext(msgType chatservice.MessageType) string {
 	switch msgType {
-	case Warning:
+	case chatservice.Warning:
 		return "Warning"
-	case Attention:
+	case chatservice.Attention:
 		return "Attention"
 	}
 
 	return ""
 }
 
-func (msgType MessageType) getMsgColor() string {
-
+func getMsgColor(msgType chatservice.MessageType) string {
 	switch msgType {
-	case Warning:
+	case chatservice.Warning:
 		return "#ff9900"
-	case Attention:
+	case chatservice.Attention:
 		return "#ff471a"
 	}
 

@@ -67,6 +67,7 @@ func processMsgLoop(
 		select {
 		case <-ctx.Done():
 			log.Printf("Shutting down processing loop")
+
 			return
 		case msg := <-slackChatChannel:
 			inChatMsgChannel <- chatservice.Message{

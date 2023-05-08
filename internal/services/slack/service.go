@@ -2,7 +2,7 @@ package slackservice
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strings"
 	config "woodpecker/configs"
 	chatservice "woodpecker/internal/services/chat"
@@ -34,6 +34,7 @@ func New(cfg *config.Config, log *structlog.Logger) *Service {
 
 	client := slackclient.New(slackClient, socketmodewrap.New(socketClient), log)
 	service := Service{client: client}
+
 	return &service
 }
 
@@ -82,7 +83,7 @@ func (service *Service) SendMessage(msg chatservice.OutMessage) error {
 		return errPostMsg
 	}
 
-	return errors.New("service.client is nil")
+	return fmt.Errorf("service.client is nil")
 }
 
 func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {
@@ -90,8 +91,10 @@ func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {
 		User:    msg.Message.User,
 		Channel: slackclient.ChannelID(msg.Message.Channel),
 		Text:    msg.Message.Text,
-		Pretext: msg.Pretext}
-	slackOutMsg.Color = getMsgColor(msg.Type)
+		Pretext: msg.Pretext,
+		Color:   getMsgColor(msg.Type),
+		Error:   nil,
+	}
 
 	if strings.TrimSpace(slackOutMsg.Pretext) == "" {
 		slackOutMsg.Pretext = getMsgPretext(msg.Type)

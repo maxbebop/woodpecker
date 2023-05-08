@@ -67,6 +67,7 @@ func (c *Client) GetMessagesLoop(ctx context.Context, res chan<- Message) {
 				eventsAPI, ok := event.Data.(slackevents.EventsAPIEvent)
 				if !ok {
 					c.log.Printf("Could not type cast the event to the EventsAPI: %T: %+v\n", event, event)
+
 					continue
 				}
 

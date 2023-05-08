@@ -60,6 +60,7 @@ func processMsgLoop(
 		select {
 		case <-ctx.Done():
 			log.Printf("Shutting down processing loop")
+
 			return
 		case msg := <-in:
 			log.Debug("processMsgLoop", "from", msg.User, "text", msg.Text)
@@ -75,8 +76,7 @@ func processMsg(chatBot ChatBot, msg Message, log *structlog.Logger) {
 
 	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
-	outMsg := OutMessage{Message: msg}
-	outMsg.Type = Common
+	outMsg := OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
 
 	if err := chatBot.SendMessage(outMsg); err != nil {
 		log.Err("send message", "err", err) //nolint:errcheck // intentional

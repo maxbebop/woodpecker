@@ -16,6 +16,8 @@ func TestStartChat(t *testing.T) {
 	chatBot.On("GetMessagesLoop", ctx, inMsgChannel, nil)
 	chatBot.On("SendMessage", chatservice.OutMessage{
 		Message: chatservice.Message{},
-		Type:    chatservice.Common})
+		Type:    chatservice.Common,
+		Pretext: "",
+		Error:   nil})
 	close(inMsgChannel)
 }

@@ -2,6 +2,7 @@ package chatservice
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/powerman/structlog"
 )
@@ -44,7 +45,7 @@ func StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	go processMsgLoop(ctx, chatBot, chatChannel, log)
 
 	if err := chatBot.Run(); err != nil {
-		return log.Err("client run", "err", err)
+		return fmt.Errorf("%w", log.Err("client run", "err", err))
 	}
 
 	return nil

@@ -109,7 +109,7 @@ func handleBotEventMessage(event *slackevents.MessageEvent, chatChannel chan<- M
 func (c *Client) SendMessage(message OutMessage) error {
 	user, err := c.api.GetUserInfo(message.User)
 	if err != nil {
-		return c.log.Err("failed to post message: %v\n", err)
+		return fmt.Errorf("failed to post message: %w", err)
 	}
 
 	attachment := slack.Attachment{}

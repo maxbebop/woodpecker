@@ -2,6 +2,7 @@ package slackservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	config "woodpecker/configs"
@@ -18,6 +19,8 @@ import (
 type Service struct {
 	client *slackclient.Client
 }
+
+var isNilErr = errors.New("is nil")
 
 func New(cfg *config.Config, log *structlog.Logger) *Service {
 	slackClient := slack.New(
@@ -41,7 +44,7 @@ func New(cfg *config.Config, log *structlog.Logger) *Service {
 func (service *Service) Run() error {
 	err := service.client.Run()
 
-	return err
+	return fmt.Errorf("run %w", err)
 }
 
 func (service *Service) GetMessagesLoop(
@@ -80,10 +83,10 @@ func (service *Service) SendMessage(msg chatservice.OutMessage) error {
 		slackOutMsg := createSlackOutMessage(msg)
 		errPostMsg := service.client.SendMessage(slackOutMsg)
 
-		return errPostMsg
+		return fmt.Errorf("send message. %w", errPostMsg)
 	}
 
-	return fmt.Errorf("service.client is nil")
+	return fmt.Errorf("service.client %w", isNilErr)
 }
 
 func createSlackOutMessage(msg chatservice.OutMessage) slackclient.OutMessage {

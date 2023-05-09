@@ -1,7 +1,7 @@
 package main
 
 import (
-	config "woodpecker/configs"
+	"woodpecker/internal/configs"
 	chatservice "woodpecker/internal/services/chat"
 	slackservice "woodpecker/internal/services/slack"
 
@@ -16,9 +16,8 @@ func main() {
 	cfg := config.New("slack.config.yml")
 
 	chatBot := slackservice.New(cfg, log)
-	err := chatservice.StartChat(chatBot, log)
 
-	if err != nil {
+	if err := chatservice.StartChat(chatBot, log); err != nil {
 		log.PrintErr(err)
 	}
 }

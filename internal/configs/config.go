@@ -17,7 +17,6 @@ type slack struct {
 }
 
 func New(filename string) *Config {
-
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)

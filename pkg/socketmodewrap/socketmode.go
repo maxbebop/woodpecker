@@ -6,6 +6,9 @@ import (
 	"github.com/slack-go/slack/socketmode"
 )
 
+// the pkg folder is for packages intended to be used in the another projects
+// do we have such plans for this one?
+
 type SocketmodeClient struct {
 	c *socketmode.Client
 }

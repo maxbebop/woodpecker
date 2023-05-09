@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	config "woodpecker/configs"
+
+	"woodpecker/internal/configs"
 	chatservice "woodpecker/internal/services/chat"
 	slackclient "woodpecker/pkg/slack"
-	socketmodewrap "woodpecker/pkg/socketmodewrap"
+	"woodpecker/pkg/socketmodewrap"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"

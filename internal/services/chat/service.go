@@ -29,6 +29,10 @@ const (
 	Attention
 )
 
+type CharService interface {
+	StartChat(chatBot ChatBot, log *structlog.Logger) error
+}
+
 type ChatBot interface {
 	GetMessagesLoop(ctx context.Context, inMsgChannel chan Message, log *structlog.Logger)
 	SendMessage(msg OutMessage) error

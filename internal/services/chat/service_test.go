@@ -75,7 +75,10 @@ func TestStartChat(t *testing.T) {
 	mockChatService := NewCharService(t)
 
 	mockChatService.On("StartChat", chatBot, log).Return(nil)
-	err := mockChatService.StartChat(chatBot, log)
+	mockStartChatErr := mockChatService.StartChat(chatBot, log)
 
-	require.NoError(t, err, "chatservice StartChat")
+	require.NoError(t, mockStartChatErr, "chatservice mock StartChat")
+
+	startChatErr := chatservice.StartChat(chatBot, log)
+	require.ErrorContains(t, startChatErr, "run invalid_auth", "chatservice StartChat")
 }

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"woodpecker/internal/configs"
+	config "woodpecker/internal/configs"
+	slackclient "woodpecker/internal/pkg/slack"
+	"woodpecker/internal/pkg/socketmodewrap"
 	chatservice "woodpecker/internal/services/chat"
-	slackclient "woodpecker/pkg/slack"
-	"woodpecker/pkg/socketmodewrap"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"

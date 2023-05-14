@@ -1,7 +1,7 @@
 package main
 
 import (
-	"woodpecker/internal/configs"
+	config "woodpecker/internal/configs"
 	chatservice "woodpecker/internal/services/chat"
 	slackservice "woodpecker/internal/services/slack"
 

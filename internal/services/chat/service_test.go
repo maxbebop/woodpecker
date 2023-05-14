@@ -23,6 +23,7 @@ func TestProcessMsg(t *testing.T) {
 	outMsg := chatservice.OutMessage{
 		Message: chatservice.Message{
 			User:    "test",
+			Text:    "test",
 			Channel: "test",
 			Error:   nil},
 		Type:    chatservice.Common,
@@ -41,6 +42,7 @@ func TestGetMessagesLoop(t *testing.T) {
 	log := structlog.New()
 	mockChatBot := NewChatBot(t)
 	ctx, cancel := context.WithCancel(context.Background())
+
 	defer cancel()
 
 	chatChannel := make(chan chatservice.Message)

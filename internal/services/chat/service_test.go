@@ -18,6 +18,8 @@ import (
 //go:generate mockery --all --testonly --outpkg chatservice_test --output .
 
 func TestProcessMsg(t *testing.T) {
+	t.Parallel()
+
 	mockChatBot := NewChatBot(t)
 	outMsg := chatservice.OutMessage{Message: chatservice.Message{User: "test", Channel: "test", Error: nil}, Type: chatservice.Common, Pretext: "", Error: nil}
 	mockChatBot.On("SendMessage", outMsg).Return(nil)

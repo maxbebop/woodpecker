@@ -8,6 +8,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	cfg := config.New("../../slack.config.yml")
 	expected := createConfigMock()
 
@@ -15,9 +17,9 @@ func TestNew(t *testing.T) {
 }
 
 func createConfigMock() *config.Config {
-	cfg := config.Config{}
-	cfg.Slack.AppToken = "xxx"
-	cfg.Slack.OAuthToken = "xxx"
+	cfg := config.Config{
+		Slack: config.Slack{AppToken: "xxx", OAuthToken: "xxx"},
+	}
 
 	return &cfg
 }

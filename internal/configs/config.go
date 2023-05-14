@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	Slack slack `yaml:"slack"`
+	Slack Slack `yaml:"slack"`
 }
 
-type slack struct {
+type Slack struct {
 	OAuthToken string `yaml:"oauth_token"`
 	AppToken   string `yaml:"app_token"`
 }

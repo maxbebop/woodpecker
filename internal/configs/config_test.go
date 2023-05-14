@@ -18,5 +18,6 @@ func createConfigMock() *config.Config {
 	cfg := config.Config{}
 	cfg.Slack.AppToken = "xxx"
 	cfg.Slack.OAuthToken = "xxx"
+
 	return &cfg
 }

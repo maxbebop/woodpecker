@@ -18,19 +18,17 @@ import (
 //go:generate mockery --all --testonly --outpkg chatservice_test --output .
 
 func TestProcessMsg(t *testing.T) {
-
 	mockChatBot := NewChatBot(t)
-
-	outMsg := chatservice.OutMessage{Message: chatservice.Message{}, Type: chatservice.Common, Pretext: "", Error: nil}
-
+	outMsg := chatservice.OutMessage{Message: chatservice.Message{User: "test", Channel: "test", Error: nil}, Type: chatservice.Common, Pretext: "", Error: nil}
 	mockChatBot.On("SendMessage", outMsg).Return(nil)
-
 	err := mockChatBot.SendMessage(outMsg)
 
 	require.NoError(t, err, "chatservice SendMessage")
 }
 
 func TestStartChat(t *testing.T) {
+	t.Parallel()
+
 	log := structlog.New()
 	cfg := config.New("../../../slack.config.yml")
 	chatBot := slackservice.New(cfg, log)
@@ -42,6 +40,7 @@ func TestStartChat(t *testing.T) {
 	defer cancel()
 
 	chatChannel := make(chan chatservice.Message)
+
 	mockChatBot.On("GetMessagesLoop", ctx, chatChannel, log).Return()
 	mockChatBot.GetMessagesLoop(ctx, chatChannel, log)
 

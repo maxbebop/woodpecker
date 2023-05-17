@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	config "woodpecker/internal/configs"
-	slackclient "woodpecker/internal/pkg/slack"
-	"woodpecker/internal/pkg/socketmodewrap"
+	slackclient "woodpecker/internal/integrations/slack"
+	"woodpecker/internal/integrations/socketmodewrap"
 	chatservice "woodpecker/internal/services/chat"
 
 	"github.com/slack-go/slack"

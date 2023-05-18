@@ -19,7 +19,7 @@ type (
 func NewClient(log *structlog.Logger) (Client, error) {
 	cfg := &pudge.Config{
 		SyncInterval: 0} //  0 - file first
-	db, err := pudge.Open("./test/db", cfg)
+	db, err := pudge.Open("./db/users", cfg)
 	if err != nil {
 		log.Err(err.Error())
 		return nil, err

@@ -3,6 +3,10 @@ package chatservice
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	pudgedb "woodpecker/internal/integrations/pudge_db"
+	models "woodpecker/internal/models/user"
 
 	"github.com/powerman/structlog"
 )
@@ -19,6 +23,7 @@ type OutMessage struct {
 	Pretext string
 	Type    MessageType
 	Error   error
+	Empty   bool
 }
 
 type MessageType int
@@ -29,9 +34,15 @@ const (
 	Attention
 )
 
-type CharService interface {
-	StartChat(chatBot ChatBot, log *structlog.Logger) error
-}
+type (
+	ChatService interface {
+		StartChat(chatBot ChatBot, log *structlog.Logger) error
+	}
+
+	chatService struct {
+		dbClient pudgedb.Client
+	}
+)
 
 type ChatBot interface {
 	GetMessagesLoop(ctx context.Context, inMsgChannel chan Message, log *structlog.Logger)
@@ -39,14 +50,22 @@ type ChatBot interface {
 	Run() error
 }
 
-func StartChat(chatBot ChatBot, log *structlog.Logger) error {
+func New(dbClient pudgedb.Client) ChatService {
+	c := &chatService{
+		dbClient: dbClient,
+	}
+
+	return c
+}
+func (s *chatService) StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	chatChannel := make(chan Message)
 
+	s.dbClient.DebugAllValues()
 	go chatBot.GetMessagesLoop(ctx, chatChannel, log)
-	go processMsgLoop(ctx, chatBot, chatChannel, log)
+	go s.processMsgLoop(ctx, chatBot, chatChannel, log)
 
 	if err := chatBot.Run(); err != nil {
 		return fmt.Errorf("%w", log.Err("client run", "err", err))
@@ -55,7 +74,7 @@ func StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	return nil
 }
 
-func processMsgLoop(
+func (s *chatService) processMsgLoop(
 	ctx context.Context,
 	chatBot ChatBot,
 	in <-chan Message,
@@ -69,21 +88,81 @@ func processMsgLoop(
 			return
 		case msg := <-in:
 			log.Debug("processMsgLoop", "from", msg.User, "text", msg.Text)
-			processMsg(chatBot, msg, log)
+			s.processMsg(chatBot, msg, log)
 		}
 	}
 }
 
-func processMsg(chatBot ChatBot, msg Message, log *structlog.Logger) {
+func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Logger) {
 	if msg.Error != nil {
 		log.Fatal(msg.Error)
 	}
 
 	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
-	outMsg := OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
+	isUserNew := s.isNewUser(msg.User, log)
+	if isUserNew {
+		s.saveNewUser(msg.User, log)
+	}
+	user, err := s.dbClient.Get(msg.User)
+	if err != nil {
+		log.Err("get user from db", "err", err) //nolint:errcheck // intentional
+	}
 
-	if err := chatBot.SendMessage(outMsg); err != nil {
-		log.Err("send message", "err", err) //nolint:errcheck // intentional
+	//outMsg := OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
+	outMsg := s.createOutMessageByStatus(user, msg, log)
+
+	if !outMsg.Empty {
+		if err := chatBot.SendMessage(outMsg); err != nil {
+			log.Err("send message", "err", err) //nolint:errcheck // intentional
+		}
+	}
+
+}
+
+func (s *chatService) createOutMessageByStatus(user models.User, msg Message, log *structlog.Logger) OutMessage {
+	if !s.hasTMSToken(user) && !s.isMsgHasTMSToken(msg) {
+		text := s.createRegistrationMsg(log)
+		msg.Text = text
+		return OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
+	} else if !s.hasTMSToken(user) && s.isMsgHasTMSToken(msg) {
+		user.TMSToken = strings.ReplaceAll(msg.Text, "token:", "")
+		s.saveUser(user, log)
+		msg.Text = "you have successfully registered!"
+		return OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
+	}
+
+	msg.Text += fmt.Sprintf(" <db: %v>", user)
+	return OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
+}
+
+func (s *chatService) isMsgHasTMSToken(msg Message) bool {
+	return strings.Contains(msg.Text, "token:")
+}
+func (s *chatService) createRegistrationMsg(log *structlog.Logger) string {
+	return "Hello! Send me your tsm token as string token:you_token"
+}
+
+func (s *chatService) hasTMSToken(user models.User) bool {
+	return len(user.TMSToken) > 0
+}
+func (s *chatService) isNewUser(user string, log *structlog.Logger) bool {
+	flag, err := s.dbClient.Has(user)
+	if err != nil {
+		log.Err(err)
+	}
+
+	return !flag
+}
+
+func (s *chatService) saveNewUser(userChatToken string, log *structlog.Logger) {
+	if err := s.dbClient.Set(models.User{ChatToken: userChatToken}); err != nil {
+		log.Err("save new user error", "user", userChatToken, "error", err)
+	}
+}
+
+func (s *chatService) saveUser(user models.User, log *structlog.Logger) {
+	if err := s.dbClient.Set(user); err != nil {
+		log.Err("save user error", "user", user, "error", err)
 	}
 }

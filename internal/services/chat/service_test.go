@@ -72,7 +72,7 @@ func TestStartChat(t *testing.T) {
 
 	require.NotNil(t, chatBot, "chatBot")
 
-	mockChatService := NewCharService(t)
+	mockChatService := NewChatService(t)
 
 	mockChatService.On("StartChat", chatBot, log).Return(nil)
 	mockStartChatErr := mockChatService.StartChat(chatBot, log)

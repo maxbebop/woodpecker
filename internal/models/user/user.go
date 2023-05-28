@@ -7,3 +7,7 @@ type User struct {
 	Name      string
 	TMSToken  string
 }
+
+func (u User) HasTMSToken() bool {
+	return len(u.TMSToken) > 0
+}

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	pudgedb "woodpecker/internal/integrations/pudge_db"
 	models "woodpecker/internal/models/user"
+	storage "woodpecker/internal/storage/pudge"
+	usertaskmanager "woodpecker/internal/userTaskManager"
 
 	"github.com/powerman/structlog"
 )
@@ -40,7 +41,8 @@ type (
 	}
 
 	chatService struct {
-		dbClient pudgedb.Client
+		utmStorage  storage.Client[usertaskmanager.UserTaskManager]
+		userStorage storage.Client[models.User]
 	}
 )
 
@@ -50,9 +52,10 @@ type ChatBot interface {
 	Run() error
 }
 
-func New(dbClient pudgedb.Client) ChatService {
+func New(utmStorage storage.Client[usertaskmanager.UserTaskManager], userStorage storage.Client[models.User]) ChatService {
 	c := &chatService{
-		dbClient: dbClient,
+		utmStorage:  utmStorage,
+		userStorage: userStorage,
 	}
 
 	return c
@@ -63,7 +66,7 @@ func (s *chatService) StartChat(chatBot ChatBot, log *structlog.Logger) error {
 
 	chatChannel := make(chan Message)
 
-	s.dbClient.DebugAllValues()
+	s.utmStorage.DebugAllValues()
 	go chatBot.GetMessagesLoop(ctx, chatChannel, log)
 	go s.processMsgLoop(ctx, chatBot, chatChannel, log)
 
@@ -104,7 +107,7 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 	if isUserNew {
 		s.saveNewUser(msg.User, log)
 	}
-	user, err := s.dbClient.Get(msg.User)
+	user, err := s.userStorage.Get(msg.User)
 	if err != nil {
 		log.Err("get user from db", "err", err) //nolint:errcheck // intentional
 	}
@@ -118,6 +121,30 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 		}
 	}
 
+}
+
+func (s *chatService) initState(userChatToken string, chatBot ChatBot, log *structlog.Logger) error {
+
+	var userTm usertaskmanager.UserTaskManager
+	if s.isNewUser(userChatToken, log) {
+		user := models.User{ChatToken: userChatToken}
+		userTm = usertaskmanager.New()
+		if err := userTm.AddUser(user); err != nil {
+			return err
+		}
+	} else {
+		user, err := s.userStorage.Get(userChatToken)
+		if err != nil {
+			return err
+		}
+		userTm = usertaskmanager.NewByUser(user)
+	}
+
+	if err := s.utmStorage.Set(userChatToken, userTm); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *chatService) createOutMessageByStatus(user models.User, msg Message, log *structlog.Logger) OutMessage {
@@ -147,7 +174,7 @@ func (s *chatService) hasTMSToken(user models.User) bool {
 	return len(user.TMSToken) > 0
 }
 func (s *chatService) isNewUser(user string, log *structlog.Logger) bool {
-	flag, err := s.dbClient.Has(user)
+	flag, err := s.userStorage.Has(user)
 	if err != nil {
 		log.Err(err)
 	}
@@ -156,13 +183,13 @@ func (s *chatService) isNewUser(user string, log *structlog.Logger) bool {
 }
 
 func (s *chatService) saveNewUser(userChatToken string, log *structlog.Logger) {
-	if err := s.dbClient.Set(models.User{ChatToken: userChatToken}); err != nil {
+	if err := s.userStorage.Set(userChatToken, models.User{ChatToken: userChatToken}); err != nil {
 		log.Err("save new user error", "user", userChatToken, "error", err)
 	}
 }
 
 func (s *chatService) saveUser(user models.User, log *structlog.Logger) {
-	if err := s.dbClient.Set(user); err != nil {
+	if err := s.userStorage.Set(user.ChatToken, user); err != nil {
 		log.Err("save user error", "user", user, "error", err)
 	}
 }

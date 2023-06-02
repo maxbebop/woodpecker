@@ -1,23 +1,27 @@
 package usertaskmanager
 
-import (
-	"fmt"
-	models "woodpecker/internal/models/user"
-)
+import models "woodpecker/internal/models"
 
 type WaitTaskState struct {
-	userTaskManager *UserTaskManager
+	userTaskManager UserTaskManager
 	//dbClient        pudgedb.Client
 }
 
-func (i *WaitTaskState) AddUser(user models.User) error {
+func (i *WaitTaskState) Compute(env models.Environment, process StateProcess) error {
+	process.SendMessage(i.userTaskManager.environment.User, i.userTaskManager.environment.User.ChatToken, "you don't have any task!", i.userTaskManager.log)
+	return nil
+}
+
+/*
+func (i *WaitTaskState) AddUser(userChatToken string) error {
 	return fmt.Errorf("user already added")
 }
 
-func (i *WaitTaskState) RequestTsmToken(user models.User) error {
+func (i *WaitTaskState) RequestTsmToken() error {
 	return fmt.Errorf("tsm token already saved")
 }
 
-func (i *WaitTaskState) SaveTsmToken(user models.User) error {
+func (i *WaitTaskState) SaveTsmToken(tsmToken string) error {
 	return fmt.Errorf("tsm token already saved")
 }
+*/

@@ -9,7 +9,7 @@ import (
 )
 
 type Client[T any] interface {
-	Has(key string) (bool, error)
+	Has(key string) bool
 	Get(key string) (T, error)
 	Set(key string, value T) error
 	DebugAllValues()
@@ -34,8 +34,15 @@ func New[T any](storeMode pudgedb.Mode, name string, log *structlog.Logger) (Cli
 	return c, nil
 }
 
-func (c *client[T]) Has(key string) (bool, error) {
-	return c.db.Has(key)
+func (c *client[T]) Has(key string) bool {
+	has, err := c.db.Has(key)
+	if has {
+		return true
+	}
+
+	c.log.Err(err)
+
+	return false
 }
 
 func (c *client[T]) Get(key string) (T, error) {

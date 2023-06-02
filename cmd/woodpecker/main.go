@@ -3,7 +3,7 @@ package main
 import (
 	config "woodpecker/internal/configs"
 	pudgedb "woodpecker/internal/integrations/pudge"
-	models "woodpecker/internal/models/user"
+	models "woodpecker/internal/models"
 	storage "woodpecker/internal/storage/pudge"
 	userTaskManager "woodpecker/internal/userTaskManager"
 
@@ -28,7 +28,7 @@ func main() {
 		log.PrintErr(err)
 		panic(err)
 	}
-	cacheClient, err := storage.New[userTaskManager.UserTaskManager](pudgedb.Db, "users", log) //udgedb.NewClient(pudgedb.Cache, log)
+	cacheClient, err := storage.New[userTaskManager.State](pudgedb.Db, "users", log) //udgedb.NewClient(pudgedb.Cache, log)
 	if err != nil {
 		log.PrintErr(err)
 		panic(err)

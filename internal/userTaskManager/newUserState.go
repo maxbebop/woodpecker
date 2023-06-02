@@ -1,30 +1,41 @@
 package usertaskmanager
 
 import (
-	"fmt"
-	models "woodpecker/internal/models/user"
+	models "woodpecker/internal/models"
 	storage "woodpecker/internal/storage/pudge"
 )
 
 type NewUserState struct {
-	userTaskManager *UserTaskManager
-	storaeClient    storage.Client[models.User]
+	userTaskManager UserTaskManager
+	userStorage     storage.Client[models.User]
 }
 
-func (i *NewUserState) AddUser(user models.User) error {
-	if err := i.storaeClient.Set(user.ChatToken, user); err != nil {
+func (i *NewUserState) Compute(env models.Environment, process StateProcess) error {
+	i.userTaskManager.environment = env
+	if !i.userStorage.Has(env.User.ChatToken) {
+		if err := i.userStorage.Set(env.User.ChatToken, env.User); err != nil {
+			return err
+		}
+	}
+
+	return i.userTaskManager.setState(i.userTaskManager.noTMSToken)
+}
+
+/*
+func (i *NewUserState) addUser(userChatToken string) error {
+	i.userTaskManager.user = models.User{ChatToken: userChatToken}
+	if err := i.userStorage.Set(userChatToken, i.userTaskManager.user); err != nil {
 		return err
 	}
 
-	i.userTaskManager.setState(i.userTaskManager.noTSMToken)
-
-	return nil
+	return i.userTaskManager.setState(i.userTaskManager.noTSMToken)
 }
 
-func (i *NewUserState) RequestTsmToken(user models.User) error {
+func (i *NewUserState) RequestTsmToken() error {
 	return fmt.Errorf("user not registered")
 }
 
-func (i *NewUserState) SaveTsmToken(user models.User) error {
+func (i *NewUserState) SaveTsmToken(tsmTocken string) error {
 	return fmt.Errorf("user not registered")
 }
+*/

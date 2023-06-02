@@ -3,13 +3,24 @@ package chatservice
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	models "woodpecker/internal/models/user"
+	models "woodpecker/internal/models"
 	storage "woodpecker/internal/storage/pudge"
 	usertaskmanager "woodpecker/internal/userTaskManager"
 
 	"github.com/powerman/structlog"
+)
+
+type (
+	ChatService interface {
+		StartChat(chatBot ChatBot, log *structlog.Logger) error
+	}
+
+	chatService struct {
+		chatBot     ChatBot
+		utmStorage  storage.Client[usertaskmanager.State]
+		userStorage storage.Client[models.User]
+	}
 )
 
 type Message struct {
@@ -35,32 +46,23 @@ const (
 	Attention
 )
 
-type (
-	ChatService interface {
-		StartChat(chatBot ChatBot, log *structlog.Logger) error
-	}
-
-	chatService struct {
-		utmStorage  storage.Client[usertaskmanager.UserTaskManager]
-		userStorage storage.Client[models.User]
-	}
-)
-
 type ChatBot interface {
 	GetMessagesLoop(ctx context.Context, inMsgChannel chan Message, log *structlog.Logger)
 	SendMessage(msg OutMessage) error
 	Run() error
 }
 
-func New(utmStorage storage.Client[usertaskmanager.UserTaskManager], userStorage storage.Client[models.User]) ChatService {
+func New(utmStorage storage.Client[usertaskmanager.State], userStorage storage.Client[models.User]) ChatService {
 	c := &chatService{
 		utmStorage:  utmStorage,
 		userStorage: userStorage,
+		chatBot:     nil,
 	}
 
 	return c
 }
 func (s *chatService) StartChat(chatBot ChatBot, log *structlog.Logger) error {
+	s.chatBot = chatBot
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -103,50 +105,65 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 
 	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
-	isUserNew := s.isNewUser(msg.User, log)
-	if isUserNew {
-		s.saveNewUser(msg.User, log)
-	}
-	user, err := s.userStorage.Get(msg.User)
+	utmState, err := s.getUserState(msg.User, log)
 	if err != nil {
 		log.Err("get user from db", "err", err) //nolint:errcheck // intentional
 	}
 
+	if user, err := s.userStorage.Get(msg.User); err != nil {
+		env := models.Environment{
+			User: user,
+		}
+		utmState.Compute(env, s)
+	}
+
 	//outMsg := OutMessage{Message: msg, Type: Common, Pretext: "", Error: nil}
-	outMsg := s.createOutMessageByStatus(user, msg, log)
+	//outMsg := s.createOutMessageByStatus(user, msg, log)
+
+	/*
+		if !outMsg.Empty {
+			if err := chatBot.SendMessage(outMsg); err != nil {
+				log.Err("send message", "err", err) //nolint:errcheck // intentional
+			}
+		} */
+
+}
+
+func (s *chatService) SendMessage(user models.User, chatChannel string, msg string, log *structlog.Logger) {
+	baseMsg := Message{
+		User:    user.ChatToken,
+		Channel: chatChannel,
+		Text:    msg,
+		Error:   nil,
+	}
+	outMsg := OutMessage{Message: baseMsg, Type: Common, Pretext: "", Error: nil}
 
 	if !outMsg.Empty {
-		if err := chatBot.SendMessage(outMsg); err != nil {
+		if err := s.chatBot.SendMessage(outMsg); err != nil {
 			log.Err("send message", "err", err) //nolint:errcheck // intentional
 		}
 	}
-
 }
 
-func (s *chatService) initState(userChatToken string, chatBot ChatBot, log *structlog.Logger) error {
-
-	var userTm usertaskmanager.UserTaskManager
-	if s.isNewUser(userChatToken, log) {
+func (s *chatService) getUserState(userChatToken string, log *structlog.Logger) (usertaskmanager.State, error) {
+	if !s.userStorage.Has(userChatToken) {
+		utm := usertaskmanager.New(log)
 		user := models.User{ChatToken: userChatToken}
-		userTm = usertaskmanager.New()
-		if err := userTm.AddUser(user); err != nil {
-			return err
+
+		env := models.Environment{
+			User: user,
 		}
-	} else {
-		user, err := s.userStorage.Get(userChatToken)
-		if err != nil {
-			return err
+
+		if err := utm.Compute(env, s); err != nil {
+			return nil, err
 		}
-		userTm = usertaskmanager.NewByUser(user)
+
 	}
 
-	if err := s.utmStorage.Set(userChatToken, userTm); err != nil {
-		return err
-	}
-
-	return nil
+	return s.utmStorage.Get(userChatToken)
 }
 
+/*
 func (s *chatService) createOutMessageByStatus(user models.User, msg Message, log *structlog.Logger) OutMessage {
 	if !s.hasTMSToken(user) && !s.isMsgHasTMSToken(msg) {
 		text := s.createRegistrationMsg(log)
@@ -173,6 +190,8 @@ func (s *chatService) createRegistrationMsg(log *structlog.Logger) string {
 func (s *chatService) hasTMSToken(user models.User) bool {
 	return len(user.TMSToken) > 0
 }
+*/
+/*
 func (s *chatService) isNewUser(user string, log *structlog.Logger) bool {
 	flag, err := s.userStorage.Has(user)
 	if err != nil {
@@ -193,3 +212,4 @@ func (s *chatService) saveUser(user models.User, log *structlog.Logger) {
 		log.Err("save user error", "user", user, "error", err)
 	}
 }
+*/

@@ -114,7 +114,6 @@ func (c *Client) SendMessage(message OutMessage) error {
 	}
 
 	attachment := slack.Attachment{}
-	//attachment.Text = fmt.Sprintf("%s -> %s", user.Name, message.Text)
 	attachment.Text = message.Text
 	attachment.Pretext = message.Pretext
 	attachment.Color = message.Color

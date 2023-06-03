@@ -12,6 +12,7 @@ type Client[T any] interface {
 	Has(key string) bool
 	Get(key string) (T, error)
 	Set(key string, value T) error
+	GetAllItems() ([]T, error)
 	DebugAllValues()
 }
 
@@ -35,6 +36,7 @@ func New[T any](storeMode pudgedb.Mode, name string, log *structlog.Logger) (Cli
 }
 
 func (c *client[T]) Has(key string) bool {
+
 	has, err := c.db.Has(key)
 	if has {
 		return true
@@ -46,6 +48,7 @@ func (c *client[T]) Has(key string) bool {
 }
 
 func (c *client[T]) Get(key string) (T, error) {
+	fmt.Printf("Get: key: %v \n", key)
 	var val T
 	if err := c.db.Get(key, &val); err != nil {
 		return val, err
@@ -57,13 +60,27 @@ func (c *client[T]) Set(key string, value T) error {
 	return c.db.Set(key, value)
 }
 
+func (c *client[T]) GetAllItems() ([]T, error) {
+	result := []T{}
+	keys, err := c.db.Keys(nil, 0, 0, true)
+	if err != nil {
+		return result, err
+	}
+	for _, key := range keys {
+		var u T
+		c.db.Get(key, &u)
+		result = append(result, u)
+	}
+
+	return result, nil
+}
 func (c *client[T]) DebugAllValues() {
 	fmt.Println("All key value --")
 	keys, _ := c.db.Keys(nil, 0, 0, true)
 	for _, key := range keys {
 		var u T
 		c.db.Get(key, &u)
-		fmt.Println(u)
+		fmt.Printf("key: %v; val: %v\n", string(key), u)
 	}
 	fmt.Println("-- -- -- --")
 }

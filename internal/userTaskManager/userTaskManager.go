@@ -2,60 +2,63 @@ package usertaskmanager
 
 import (
 	models "woodpecker/internal/models"
+	storage "woodpecker/internal/storage/pudge"
 
 	"github.com/powerman/structlog"
 )
 
-type State interface {
-	Compute(env models.Environment, process StateProcess) error
-	/*addUser(userChatToken string) error
-	requestTsmToken() error
-	saveTsmToken(tsmTocken string) error */
+/*
+type state interface {
+	compute(env models.Environment, process StateProcess) error
+}*/
+
+type StateHandler interface {
+	SendMessageByState(user models.User, chatChannel string, msg string, log *structlog.Logger)
 }
 
-type StateProcess interface {
-	SendMessage(user models.User, chatChannel string, msg string, log *structlog.Logger)
-}
+type (
+	state interface {
+		compute(env models.Environment, handler StateHandler) error
+	}
+
+	UserTaskManager struct {
+		newUser      state
+		noTMSToken   state
+		waitTMSToken state
+		waitTask     state
+
+		currentState state
+
+		environment models.Environment
+
+		userStorage storage.Client[models.User]
+		log         *structlog.Logger
+	}
+)
 
 /*
-	type EnvironmentAction interface {
-		Process(env Environment) error
-	}
-*/
-
 type UserTaskManager struct {
-	newUser      State
-	noTMSToken   State
-	waitTMSToken State
-	waitTask     State
+	newUser      state
+	noTMSToken   state
+	waitTMSToken state
+	waitTask     state
 
-	currentState State
+	currentState state
 
 	environment models.Environment
-	log         *structlog.Logger
-}
 
-func New(log *structlog.Logger) UserTaskManager {
-	utm := UserTaskManager{log: log}
+	userStorage storage.Client[models.User]
+	log         *structlog.Logger
+} */
+
+func New(userStorage storage.Client[models.User], log *structlog.Logger) *UserTaskManager {
+	utm := &UserTaskManager{userStorage: userStorage, log: log}
 	utm.initStates()
 	utm.setState(utm.newUser)
 	return utm
 }
 
-/*
-func NewByUser(user models.User) UserTaskManager {
-	utm := UserTaskManager{user: user}
-	utm.initStates()
-	if user.HasTMSToken() {
-		utm.setState(utm.waitTask)
-	} else {
-		utm.setState(utm.noTSMToken)
-	}
-
-	return utm
-} */
-
-func (utm UserTaskManager) initStates() {
+func (utm *UserTaskManager) initStates() {
 	newUser := &NewUserState{
 		userTaskManager: utm,
 	}
@@ -78,24 +81,11 @@ func (utm UserTaskManager) initStates() {
 	utm.waitTask = waitTask
 }
 
-func (utm UserTaskManager) Compute(env models.Environment, process StateProcess) error {
-	return utm.currentState.Compute(env, process)
+func (utm *UserTaskManager) Compute(env models.Environment, handler StateHandler) error {
+	return utm.currentState.compute(env, handler)
 }
 
-/*
-	func (utm UserTaskManager) addUser(userChatToken string) error {
-		return utm.currentState.addUser(userChatToken)
-	}
-
-	func (utm UserTaskManager) requestTsmToken() error {
-		return utm.currentState.requestTsmToken()
-	}
-
-	func (utm UserTaskManager) saveTsmToken(tsmTocken string) error {
-		return utm.currentState.saveTsmToken(tsmTocken)
-	}
-*/
-func (utm UserTaskManager) setState(s State) error {
+func (utm *UserTaskManager) setState(s state) error {
 	utm.currentState = s
 
 	return nil

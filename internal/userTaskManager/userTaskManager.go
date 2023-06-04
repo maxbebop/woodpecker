@@ -1,16 +1,12 @@
 package usertaskmanager
 
 import (
+	"reflect"
 	models "woodpecker/internal/models"
 	storage "woodpecker/internal/storage/pudge"
 
 	"github.com/powerman/structlog"
 )
-
-/*
-type state interface {
-	compute(env models.Environment, process StateProcess) error
-}*/
 
 type StateHandler interface {
 	SendMessageByState(user models.User, chatChannel string, msg string, log *structlog.Logger)
@@ -35,21 +31,6 @@ type (
 		log         *structlog.Logger
 	}
 )
-
-/*
-type UserTaskManager struct {
-	newUser      state
-	noTMSToken   state
-	waitTMSToken state
-	waitTask     state
-
-	currentState state
-
-	environment models.Environment
-
-	userStorage storage.Client[models.User]
-	log         *structlog.Logger
-} */
 
 func New(userStorage storage.Client[models.User], log *structlog.Logger) *UserTaskManager {
 	utm := &UserTaskManager{userStorage: userStorage, log: log}
@@ -79,6 +60,11 @@ func (utm *UserTaskManager) initStates() {
 	utm.noTMSToken = noTMSToken
 	utm.waitTMSToken = waitTMSToken
 	utm.waitTask = waitTask
+}
+
+func (utm *UserTaskManager) GetCode() string {
+	t := reflect.TypeOf(utm.currentState).Elem()
+	return t.Name()
 }
 
 func (utm *UserTaskManager) Compute(env models.Environment, handler StateHandler) error {

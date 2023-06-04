@@ -125,7 +125,6 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 
 	s.setStameManager(user.ChatToken, stateManager, log)
 	s.userStorage.DebugAllValues()
-
 }
 
 func (s *chatService) SendMessageByState(user models.User, chatChannel string, msg string, log *structlog.Logger) {

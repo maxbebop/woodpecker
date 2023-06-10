@@ -1,14 +1,14 @@
-package usertaskmanager
+package userstatemanager
 
 import models "woodpecker/internal/models"
 
 type WaitTaskState struct {
-	userTaskManager *UserTaskManager
+	userStateManager *UserStateManager
 }
 
 const testWaitTaskStateMsg = "you don't have any task!"
 
 func (i *WaitTaskState) compute(env models.Environment, handler StateHandler) error {
-	handler.SendMessageByState(i.userTaskManager.environment.User, i.userTaskManager.environment.User.ChatToken, testWaitTaskStateMsg, i.userTaskManager.log)
+	handler.SendMessageByState(i.userStateManager.environment.User, i.userStateManager.environment.User.MessengerToken, testWaitTaskStateMsg, i.userStateManager.log)
 	return nil
 }

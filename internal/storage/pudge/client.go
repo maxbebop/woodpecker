@@ -1,4 +1,4 @@
-package storage
+package pudgeclient
 
 import (
 	"fmt"
@@ -8,22 +8,14 @@ import (
 	"github.com/powerman/structlog"
 )
 
-type Client[T any] interface {
-	Has(key string) bool
-	Get(key string) (T, error)
-	Set(key string, value T) error
-	GetAllItems() ([]T, error)
-	DebugAllValues()
-}
-
 type client[T any] struct {
 	log *structlog.Logger
 	db  *pudge.Db
 }
 
-func New[T any](storeMode pudgedb.Mode, name string, log *structlog.Logger) (Client[T], error) {
-
-	db, err := pudgedb.New(storeMode, name, log)
+func New[T any](log *structlog.Logger) (*client[T], error) {
+	name := fmt.Sprintf("%T", *new(T))
+	db, err := pudgedb.New(pudgedb.Db, name, log)
 	if err != nil {
 		return nil, err
 	}
@@ -47,13 +39,13 @@ func (c *client[T]) Has(key string) bool {
 	return false
 }
 
-func (c *client[T]) Get(key string) (T, error) {
+func (c *client[T]) Get(key string) (T, bool) {
 	fmt.Printf("Get: key: %v \n", key)
 	var val T
 	if err := c.db.Get(key, &val); err != nil {
-		return val, err
+		return val, false
 	}
-	return val, nil
+	return val, true
 }
 
 func (c *client[T]) Set(key string, value T) error {
@@ -74,13 +66,14 @@ func (c *client[T]) GetAllItems() ([]T, error) {
 
 	return result, nil
 }
+
 func (c *client[T]) DebugAllValues() {
-	fmt.Println("All key value --")
+	c.log.Debug("All key value --")
 	keys, _ := c.db.Keys(nil, 0, 0, true)
 	for _, key := range keys {
 		var u T
 		c.db.Get(key, &u)
-		fmt.Printf("key: %v; val: %v\n", string(key), u)
+		c.log.Debug("key: %v; val: %v", string(key), u)
 	}
-	fmt.Println("-- -- -- --")
+	c.log.Debug("-- -- -- --")
 }

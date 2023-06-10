@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	models "woodpecker/internal/models"
-	storage "woodpecker/internal/storage/pudge"
-	usertaskmanager "woodpecker/internal/userTaskManager"
+	"woodpecker/internal/models"
+	"woodpecker/internal/storage/users"
+	"woodpecker/internal/storage/userstatemanagers"
+	"woodpecker/internal/userstatemanager"
 
 	"github.com/powerman/structlog"
 )
@@ -18,8 +19,8 @@ type (
 
 	chatService struct {
 		chatBot     ChatBot
-		userStorage storage.Client[models.User]
-		urmCache    map[string]*usertaskmanager.UserTaskManager
+		userStorage users.Client
+		utmStorage  userstatemanagers.Client
 	}
 )
 
@@ -52,11 +53,11 @@ type ChatBot interface {
 	Run() error
 }
 
-func New(userStorage storage.Client[models.User]) ChatService {
+func New(userStorage users.Client, utmStorage userstatemanagers.Client) ChatService {
 	c := &chatService{
 		userStorage: userStorage,
 		chatBot:     nil,
-		urmCache:    make(map[string]*usertaskmanager.UserTaskManager),
+		utmStorage:  utmStorage,
 	}
 
 	return c
@@ -105,16 +106,17 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 
 	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
-	user, err := s.getUser(msg.Channel, msg.User, log)
-	if err != nil {
-		log.Err("get user from db", "err", err) //nolint:errcheck // intentional
+	chatChanelId := models.ChatChanelId(msg.Channel)
+	user, ok := s.getUser(models.UserMessengerToken(msg.User))
+	if !ok {
+		log.Err("get user from db") //nolint:errcheck // intentional
 		return
 	}
 
-	stateManager := s.getStameManager(user.ChatToken, log)
+	stateManager := s.getStameManager(user.MessengerToken, log)
 	env := models.Environment{
 		User:         user,
-		ChatChanelId: msg.Channel,
+		ChatChanelId: chatChanelId,
 		Msg:          msg.Text,
 	}
 
@@ -123,14 +125,13 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 		return
 	}
 
-	s.setStameManager(user.ChatToken, stateManager, log)
-	s.userStorage.DebugAllValues()
+	s.setStameManager(user.MessengerToken, stateManager, log)
 }
 
-func (s *chatService) SendMessageByState(user models.User, chatChannel string, msg string, log *structlog.Logger) {
+func (s *chatService) SendMessageByState(user models.User, messengerToken models.UserMessengerToken, msg string, log *structlog.Logger) {
 	baseMsg := Message{
-		User:    user.ChatToken,
-		Channel: chatChannel,
+		User:    string(user.MessengerToken),
+		Channel: string(user.MessengerToken),
 		Text:    msg,
 		Error:   nil,
 	}
@@ -151,39 +152,48 @@ func (s *chatService) initStateManagrersCache(log *structlog.Logger) error {
 
 	for i := range users {
 		user := users[i]
-		stateManager := s.getStameManager(user.ChatToken, log)
+		stateManager := s.getStameManager(user.MessengerToken, log)
 		env := models.Environment{
-			User:         user,
-			ChatChanelId: user.ChatToken,
+			User: user,
 		}
 
 		if err := stateManager.Compute(env, s); err != nil {
 			return log.Err("state compute", "err", err) //nolint:errcheck // intentional
 		}
 
-		s.setStameManager(user.ChatToken, stateManager, log)
+		s.setStameManager(user.MessengerToken, stateManager, log)
 	}
 	s.userStorage.DebugAllValues()
+	s.utmStorage.DebugAllValues()
 	return nil
 }
 
-func (s *chatService) getUser(chatChanelId string, userChatToken string, log *structlog.Logger) (models.User, error) {
-	if !s.userStorage.Has(chatChanelId) {
-		return models.User{ChatToken: userChatToken}, nil
-	}
-
-	return s.userStorage.Get(chatChanelId)
+func (s *chatService) hasUser(messengerToken models.UserMessengerToken) bool {
+	return s.userStorage.Has(string(messengerToken))
 }
 
-func (s *chatService) getStameManager(userChatToken string, log *structlog.Logger) *usertaskmanager.UserTaskManager {
-	utm := s.urmCache[userChatToken]
-	if utm == nil {
-		utm = usertaskmanager.New(s.userStorage, log)
+func (s *chatService) createUser(messengerToken models.UserMessengerToken) models.User {
+	return models.User{MessengerToken: messengerToken}
+}
+
+func (s *chatService) getUser(messangerToken models.UserMessengerToken) (models.User, bool) {
+
+	if !s.hasUser(messangerToken) {
+		return s.createUser(messangerToken), true
+	}
+	return s.userStorage.Get(string(messangerToken))
+}
+
+func (s *chatService) getStameManager(userToken models.UserMessengerToken, log *structlog.Logger) *userstatemanager.UserStateManager {
+	utm, ok := s.utmStorage.Get(string(userToken))
+	if !ok {
+		utm = userstatemanager.New(s.userStorage, log)
 	}
 
 	return utm
 }
 
-func (s *chatService) setStameManager(userChatToken string, stameManager *usertaskmanager.UserTaskManager, log *structlog.Logger) {
-	s.urmCache[userChatToken] = stameManager
+func (s *chatService) setStameManager(userToken models.UserMessengerToken, stameManager *userstatemanager.UserStateManager, log *structlog.Logger) {
+	log.Debug("setStameManager: %v\n", stameManager.GetCode())
+	s.utmStorage.Set(string(userToken), stameManager)
 }

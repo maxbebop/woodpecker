@@ -1,11 +1,13 @@
 package models
 
+type UserMessengerToken string
+type TMSToken string
 type User struct {
-	Id        int
-	ChatToken string
-	Email     string
-	Name      string
-	TMSToken  string
+	Id             int
+	MessengerToken UserMessengerToken
+	Email          string
+	Name           string
+	TMSToken       TMSToken
 }
 
 func (u User) HasTMSToken() bool {

@@ -30,19 +30,16 @@ func New[T any](log *structlog.Logger) (*client[T], error) {
 func (c *client[T]) Has(key string) bool {
 
 	has, err := c.db.Has(key)
-	if has {
-		return true
+	if err != nil {
+		return false
 	}
-
-	c.log.Err(err)
-
-	return false
+	return has
 }
 
 func (c *client[T]) Get(key string) (T, bool) {
-	fmt.Printf("Get: key: %v \n", key)
 	var val T
 	if err := c.db.Get(key, &val); err != nil {
+		c.log.Err(err)
 		return val, false
 	}
 	return val, true
@@ -72,8 +69,8 @@ func (c *client[T]) DebugAllValues() {
 	keys, _ := c.db.Keys(nil, 0, 0, true)
 	for _, key := range keys {
 		var u T
-		c.db.Get(key, &u)
-		c.log.Debug("key: %v; val: %v", string(key), u)
+		err := c.db.Get(key, &u)
+		c.log.Debug("key: %v; val: %v; err: %v", string(key), u, err)
 	}
 	c.log.Debug("-- -- -- --")
 }

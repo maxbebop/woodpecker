@@ -67,7 +67,9 @@ func (s *chatService) StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	s.initStateManagrersCache(log)
+	if err := s.initStateManagrersCache(log); err != nil {
+		return err
+	}
 	chatChannel := make(chan Message)
 
 	go chatBot.GetMessagesLoop(ctx, chatChannel, log)
@@ -161,7 +163,9 @@ func (s *chatService) initStateManagrersCache(log *structlog.Logger) error {
 			return log.Err("state compute", "err", err) //nolint:errcheck // intentional
 		}
 
-		s.setStameManager(user.MessengerToken, stateManager, log)
+		if err := s.setStameManager(user.MessengerToken, stateManager, log); err != nil {
+			return log.Err("save state manager", "err", err) //nolint:errcheck // intentional
+		}
 	}
 	s.userStorage.DebugAllValues()
 	s.utmStorage.DebugAllValues()
@@ -193,7 +197,7 @@ func (s *chatService) getStameManager(userToken models.UserMessengerToken, log *
 	return utm
 }
 
-func (s *chatService) setStameManager(userToken models.UserMessengerToken, stameManager *userstatemanager.UserStateManager, log *structlog.Logger) {
+func (s *chatService) setStameManager(userToken models.UserMessengerToken, stameManager *userstatemanager.UserStateManager, log *structlog.Logger) error {
 	log.Debug("setStameManager: %v\n", stameManager.GetCode())
-	s.utmStorage.Set(string(userToken), stameManager)
+	return s.utmStorage.Set(string(userToken), stameManager)
 }

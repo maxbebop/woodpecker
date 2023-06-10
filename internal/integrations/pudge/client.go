@@ -21,7 +21,7 @@ func New(storeMode Mode, name string, log *structlog.Logger) (*pudge.Db, error) 
 
 	db, err := pudge.Open(pathDb, cfg)
 	if err != nil {
-		log.Err(err.Error())
+		log.Err(err)
 		return nil, err
 	}
 

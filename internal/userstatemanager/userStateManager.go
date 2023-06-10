@@ -35,7 +35,8 @@ type (
 func New(userStorage users.Client, log *structlog.Logger) *UserStateManager {
 	usm := &UserStateManager{userStorage: userStorage, log: log}
 	usm.initStates()
-	usm.setState(usm.newUser)
+	_ = usm.setState(usm.newUser)
+
 	return usm
 }
 

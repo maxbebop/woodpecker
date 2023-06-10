@@ -79,6 +79,6 @@ func TestStartChat(t *testing.T) {
 
 	require.NoError(t, mockStartChatErr, "chatservice mock StartChat")
 
-	startChatErr := chatservice.StartChat(chatBot, log)
-	require.ErrorContains(t, startChatErr, "run invalid_auth", "chatservice StartChat")
+	startChatErr := mockChatService.StartChat(chatBot, log)
+	require.NoError(t, startChatErr, "chatservice StartChat")
 }

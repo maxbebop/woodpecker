@@ -55,6 +55,7 @@ func (c *Client[T]) Set(key string, value *T) error {
 func (c *Client[T]) GetAllItems() ([]*T, error) {
 	c.mu.RLock()
 	result := []*T{}
+
 	for key := range c.db {
 		if val, ok := c.db[key]; ok {
 			result = append(result, val)
@@ -69,10 +70,12 @@ func (c *Client[T]) GetAllItems() ([]*T, error) {
 func (c *Client[T]) DebugAllValues() {
 	c.mu.RLock()
 	c.log.Debug("All key value --")
+
 	for key := range c.db {
 		val, ok := c.db[key]
 		c.log.Debug("key: %v;, hasKey: %v; val: %v", key, ok, val)
 	}
+
 	c.log.Debug("-- -- -- --")
 	c.mu.RUnlock()
 }

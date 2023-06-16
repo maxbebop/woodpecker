@@ -51,9 +51,11 @@ func (c *Client[T]) Set(key string, value T) error {
 func (c *Client[T]) GetAllItems() ([]T, error) {
 	result := []T{}
 	keys, err := c.db.Keys(nil, 0, 0, true)
+
 	if err != nil {
 		return result, err
 	}
+
 	for _, key := range keys {
 		var u T
 		if err := c.db.Get(key, &u); err == nil {
@@ -67,10 +69,12 @@ func (c *Client[T]) GetAllItems() ([]T, error) {
 func (c *Client[T]) DebugAllValues() {
 	c.log.Debug("All key value --")
 	keys, _ := c.db.Keys(nil, 0, 0, true)
+
 	for _, key := range keys {
 		var u T
 		err := c.db.Get(key, &u)
 		c.log.Debug("key: %v; val: %v; err: %v", string(key), u, err)
 	}
+
 	c.log.Debug("-- -- -- --")
 }

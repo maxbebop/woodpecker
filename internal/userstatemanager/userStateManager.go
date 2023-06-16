@@ -42,7 +42,16 @@ type (
 )
 
 func New(userStorage UsersClient, log *structlog.Logger) *UserStateManager {
-	usm := &UserStateManager{userStorage: userStorage, log: log}
+	usm := &UserStateManager{
+		newUser:      nil,
+		noTMSToken:   nil,
+		waitTMSToken: nil,
+		waitTask:     nil,
+		currentState: nil,
+		environment:  models.Environment{},
+		userStorage:  userStorage,
+		log:          log,
+	}
 	usm.initStates()
 	_ = usm.setState(usm.newUser)
 

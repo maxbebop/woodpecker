@@ -14,7 +14,6 @@ const (
 )
 
 func New(storeMode Mode, name string, log *structlog.Logger) (*pudge.Db, error) {
-
 	pathDb := "./db/" + name
 	cfg := &pudge.Config{
 		StoreMode: int(storeMode)}

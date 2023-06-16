@@ -96,6 +96,7 @@ func (us *usersStorage) Set(key string, value models.User) error {
 
 func (us *usersStorage) GetAllItems() ([]models.User, error) {
 	result := []models.User{}
+
 	for key := range us.db {
 		if val, ok := us.db[key]; ok {
 			result = append(result, val)

@@ -20,6 +20,7 @@ func (i *NewUserState) compute(env models.Environment, handler StateHandler) err
 		if err := i.userStateManager.setState(i.userStateManager.noTMSToken); err != nil {
 			return err
 		}
+
 		return i.userStateManager.currentState.compute(env, handler)
 	}
 

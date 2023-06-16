@@ -19,6 +19,7 @@ func (i *WaitTmsTokenState) compute(env models.Environment, handler StateHandler
 	if len(env.Msg) == 0 {
 		return errors.New("tms token is empty")
 	}
+
 	env.User.TMSToken = getTMSToken(env.Msg)
 	i.userStateManager.environment = env
 

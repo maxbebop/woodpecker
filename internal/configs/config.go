@@ -17,13 +17,12 @@ type Slack struct {
 }
 
 func New(filename string) *Config {
-
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	config := Config{}
+	config := Config{Slack: Slack{}}
 	if err := yaml.Unmarshal(file, &config); err != nil {
 		log.Fatal(err)
 	}

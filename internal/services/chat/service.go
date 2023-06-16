@@ -79,11 +79,13 @@ func New(userStorage UsersClient, utmStorage USMClient) ChatService {
 func (s *chatService) StartChat(chatBot ChatBot, log *structlog.Logger) error {
 	s.chatBot = chatBot
 	ctx, cancel := context.WithCancel(context.Background())
+
 	defer cancel()
 
 	if err := s.initStateManagrersCache(log); err != nil {
 		return err
 	}
+
 	chatChannel := make(chan Message)
 
 	go chatBot.GetMessagesLoop(ctx, chatChannel, log)
@@ -124,6 +126,7 @@ func (s *chatService) processMsg(_ ChatBot, msg Message, log *structlog.Logger) 
 
 	chatChanelID := models.ChatChanelID(msg.Channel)
 	user, ok := s.getUser(models.UserMessengerToken(msg.User))
+
 	if !ok {
 		log.Err("get user from db") //nolint:errcheck // intentional
 		return
@@ -148,7 +151,7 @@ func (s *chatService) processMsg(_ ChatBot, msg Message, log *structlog.Logger) 
 
 func (s *chatService) SendMessageByState(
 	user models.User,
-	messengerToken models.UserMessengerToken,
+	_ models.UserMessengerToken,
 	msg string,
 	log *structlog.Logger,
 ) {
@@ -158,7 +161,8 @@ func (s *chatService) SendMessageByState(
 		Text:    msg,
 		Error:   nil,
 	}
-	outMsg := OutMessage{Message: baseMsg, Type: Common, Pretext: "", Error: nil}
+
+	outMsg := OutMessage{Message: baseMsg, Type: Common, Pretext: "", Error: nil, Empty: false}
 
 	if !outMsg.Empty {
 		if err := s.chatBot.SendMessage(outMsg); err != nil {
@@ -188,8 +192,10 @@ func (s *chatService) initStateManagrersCache(log *structlog.Logger) error {
 			return log.Err("save state manager", "err", err) //nolint:errcheck // intentional
 		}
 	}
+
 	s.userStorage.DebugAllValues()
 	s.utmStorage.DebugAllValues()
+
 	return nil
 }
 
@@ -202,7 +208,6 @@ func (s *chatService) createUser(messengerToken models.UserMessengerToken) model
 }
 
 func (s *chatService) getUser(messangerToken models.UserMessengerToken) (models.User, bool) {
-
 	if !s.hasUser(messangerToken) {
 		return s.createUser(messangerToken), true
 	}

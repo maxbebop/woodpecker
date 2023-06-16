@@ -8,18 +8,18 @@ import (
 	"github.com/powerman/structlog"
 )
 
-type client[T any] struct {
+type Client[T any] struct {
 	log *structlog.Logger
 	db  *pudge.Db
 }
 
-func New[T any](log *structlog.Logger) (*client[T], error) {
+func New[T any](log *structlog.Logger) (*Client[T], error) {
 	name := fmt.Sprintf("%T", *new(T))
 	db, err := pudgedb.New(pudgedb.Db, name, log)
 	if err != nil {
 		return nil, err
 	}
-	c := &client[T]{
+	c := &Client[T]{
 		db:  db,
 		log: log,
 	}
@@ -27,7 +27,7 @@ func New[T any](log *structlog.Logger) (*client[T], error) {
 	return c, nil
 }
 
-func (c *client[T]) Has(key string) bool {
+func (c *Client[T]) Has(key string) bool {
 
 	has, err := c.db.Has(key)
 	if err != nil {
@@ -36,7 +36,7 @@ func (c *client[T]) Has(key string) bool {
 	return has
 }
 
-func (c *client[T]) Get(key string) (T, bool) {
+func (c *Client[T]) Get(key string) (T, bool) {
 	var val T
 	if err := c.db.Get(key, &val); err != nil {
 		c.log.Err(err)
@@ -45,11 +45,11 @@ func (c *client[T]) Get(key string) (T, bool) {
 	return val, true
 }
 
-func (c *client[T]) Set(key string, value T) error {
+func (c *Client[T]) Set(key string, value T) error {
 	return c.db.Set(key, value)
 }
 
-func (c *client[T]) GetAllItems() ([]T, error) {
+func (c *Client[T]) GetAllItems() ([]T, error) {
 	result := []T{}
 	keys, err := c.db.Keys(nil, 0, 0, true)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *client[T]) GetAllItems() ([]T, error) {
 	return result, nil
 }
 
-func (c *client[T]) DebugAllValues() {
+func (c *Client[T]) DebugAllValues() {
 	c.log.Debug("All key value --")
 	keys, _ := c.db.Keys(nil, 0, 0, true)
 	for _, key := range keys {

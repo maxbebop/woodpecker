@@ -6,16 +6,16 @@ import (
 	"github.com/powerman/structlog"
 )
 
-type client[T any] struct {
+type Client[T any] struct {
 	log *structlog.Logger
 	mu  *sync.RWMutex
 	db  map[string]*T
 }
 
-func New[T any](log *structlog.Logger) (*client[T], error) {
+func New[T any](log *structlog.Logger) (*Client[T], error) {
 
 	db := make(map[string]*T)
-	c := &client[T]{
+	c := &Client[T]{
 		db:  db,
 		log: log,
 		mu:  &sync.RWMutex{},
@@ -24,7 +24,7 @@ func New[T any](log *structlog.Logger) (*client[T], error) {
 	return c, nil
 }
 
-func (c *client[T]) Has(key string) bool {
+func (c *Client[T]) Has(key string) bool {
 	c.mu.RLock()
 	has := false
 	_, ok := c.db[key]
@@ -35,7 +35,7 @@ func (c *client[T]) Has(key string) bool {
 	return has
 }
 
-func (c *client[T]) Get(key string) (*T, bool) {
+func (c *Client[T]) Get(key string) (*T, bool) {
 	c.mu.RLock()
 
 	val, ok := c.db[key]
@@ -45,7 +45,7 @@ func (c *client[T]) Get(key string) (*T, bool) {
 	return val, ok
 }
 
-func (c *client[T]) Set(key string, value *T) error {
+func (c *Client[T]) Set(key string, value *T) error {
 	c.mu.Lock()
 	c.db[key] = value
 	c.mu.Unlock()
@@ -53,7 +53,7 @@ func (c *client[T]) Set(key string, value *T) error {
 	return nil
 }
 
-func (c *client[T]) GetAllItems() ([]*T, error) {
+func (c *Client[T]) GetAllItems() ([]*T, error) {
 	c.mu.RLock()
 	result := []*T{}
 	for key := range c.db {
@@ -67,7 +67,7 @@ func (c *client[T]) GetAllItems() ([]*T, error) {
 	return result, nil
 }
 
-func (c *client[T]) DebugAllValues() {
+func (c *Client[T]) DebugAllValues() {
 	c.mu.RLock()
 	c.log.Debug("All key value --")
 	for key := range c.db {

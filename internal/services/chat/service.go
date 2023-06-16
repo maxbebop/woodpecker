@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"woodpecker/internal/models"
-	"woodpecker/internal/storage/users"
-	"woodpecker/internal/storage/userstatemanagers"
 	"woodpecker/internal/userstatemanager"
 
 	"github.com/powerman/structlog"
@@ -19,8 +17,8 @@ type (
 
 	chatService struct {
 		chatBot     ChatBot
-		userStorage users.Client
-		utmStorage  userstatemanagers.Client
+		userStorage UsersClient
+		utmStorage  USMClient
 	}
 )
 
@@ -53,7 +51,25 @@ type ChatBot interface {
 	Run() error
 }
 
-func New(userStorage users.Client, utmStorage userstatemanagers.Client) ChatService {
+type UsersClient interface {
+	Has(key string) bool
+	Get(key string) (models.User, bool)
+	GetAllItems() ([]models.User, error)
+	Set(key string, value models.User) error
+	//todo: for development only. this should be removed
+	DebugAllValues()
+}
+
+type USMClient interface {
+	Has(key string) bool
+	Get(key string) (*userstatemanager.UserStateManager, bool)
+	Set(key string, value *userstatemanager.UserStateManager) error
+	GetAllItems() ([]*userstatemanager.UserStateManager, error)
+	//todo: for development only. this should be removed
+	DebugAllValues()
+}
+
+func New(userStorage UsersClient, utmStorage USMClient) ChatService {
 	c := &chatService{
 		userStorage: userStorage,
 		chatBot:     nil,

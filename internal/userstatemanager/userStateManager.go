@@ -3,13 +3,17 @@ package userstatemanager
 import (
 	"reflect"
 	models "woodpecker/internal/models"
-	"woodpecker/internal/storage/users"
 
 	"github.com/powerman/structlog"
 )
 
 type StateHandler interface {
 	SendMessageByState(user models.User, messengerToken models.UserMessengerToken, msg string, log *structlog.Logger)
+}
+
+type UsersClient interface {
+	Has(key string) bool
+	Set(key string, value models.User) error
 }
 
 type (
@@ -27,12 +31,12 @@ type (
 
 		environment models.Environment
 
-		userStorage users.Client
+		userStorage UsersClient
 		log         *structlog.Logger
 	}
 )
 
-func New(userStorage users.Client, log *structlog.Logger) *UserStateManager {
+func New(userStorage UsersClient, log *structlog.Logger) *UserStateManager {
 	usm := &UserStateManager{userStorage: userStorage, log: log}
 	usm.initStates()
 	_ = usm.setState(usm.newUser)

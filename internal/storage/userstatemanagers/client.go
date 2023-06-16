@@ -7,6 +7,7 @@ import (
 	"github.com/powerman/structlog"
 )
 
+/*
 type Client interface {
 	Has(key string) bool
 	Get(key string) (*userstatemanager.UserStateManager, bool)
@@ -15,7 +16,8 @@ type Client interface {
 	//todo: for development only. this should be removed
 	DebugAllValues()
 }
+*/
 
-func New(log *structlog.Logger) (Client, error) {
+func New(log *structlog.Logger) (*cacheclient.Client[userstatemanager.UserStateManager], error) {
 	return cacheclient.New[userstatemanager.UserStateManager](log)
 }

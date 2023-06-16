@@ -6,7 +6,7 @@ type NoTSMTokenState struct {
 	userStateManager *UserStateManager
 }
 
-// todo: test msg
+// todo: test msg //nolint:all
 const testNoTSMTokenStateMsg = "Hello! Send me your tsm token as string token:you_token"
 
 func (i *NoTSMTokenState) compute(env models.Environment, handler StateHandler) error {

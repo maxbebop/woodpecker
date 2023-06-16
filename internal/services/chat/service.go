@@ -143,7 +143,9 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 		return
 	}
 
-	s.setStameManager(user.MessengerToken, stateManager, log)
+	if err := s.setStateManager(user.MessengerToken, stateManager, log); err != nil {
+		log.Err("set state manager", "err", err) //nolint:errcheck // intentional
+	}
 }
 
 func (s *chatService) SendMessageByState(user models.User, messengerToken models.UserMessengerToken, msg string, log *structlog.Logger) {
@@ -179,7 +181,7 @@ func (s *chatService) initStateManagrersCache(log *structlog.Logger) error {
 			return log.Err("state compute", "err", err) //nolint:errcheck // intentional
 		}
 
-		if err := s.setStameManager(user.MessengerToken, stateManager, log); err != nil {
+		if err := s.setStateManager(user.MessengerToken, stateManager, log); err != nil {
 			return log.Err("save state manager", "err", err) //nolint:errcheck // intentional
 		}
 	}
@@ -213,7 +215,7 @@ func (s *chatService) getStameManager(userToken models.UserMessengerToken, log *
 	return utm
 }
 
-func (s *chatService) setStameManager(userToken models.UserMessengerToken, stameManager *userstatemanager.UserStateManager, log *structlog.Logger) error {
-	log.Debug("setStameManager: %v\n", stameManager.GetCode())
+func (s *chatService) setStateManager(userToken models.UserMessengerToken, stameManager *userstatemanager.UserStateManager, log *structlog.Logger) error {
+	log.Debug("setStateManager: %v\n", stameManager.GetCode())
 	return s.utmStorage.Set(string(userToken), stameManager)
 }

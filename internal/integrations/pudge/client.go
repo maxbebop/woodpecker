@@ -5,7 +5,7 @@ import (
 	"github.com/powerman/structlog"
 )
 
-// 0 - file first;  2 - with empty file - memory without persist
+// 0 - file first;  2 - with empty file - memory without persist.
 type Mode int
 
 const (
@@ -21,8 +21,7 @@ func New(storeMode Mode, name string, log *structlog.Logger) (*pudge.Db, error) 
 
 	db, err := pudge.Open(pathDb, cfg)
 	if err != nil {
-		log.Err(err)
-		return nil, err
+		return nil, log.Err(err)
 	}
 
 	return db, nil

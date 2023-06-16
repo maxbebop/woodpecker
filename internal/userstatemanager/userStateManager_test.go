@@ -1,7 +1,6 @@
 package userstatemanager_test
 
 import (
-	"fmt"
 	"testing"
 	"woodpecker/internal/models"
 	"woodpecker/internal/userstatemanager"
@@ -78,28 +77,28 @@ func createMokeUser() models.User {
 	}
 }
 
-func (ut *usersStorage) Has(key string) bool {
-	_, ok := ut.db[key]
+func (us *usersStorage) Has(key string) bool {
+	_, ok := us.db[key]
 
 	return ok
 }
 
-func (ut *usersStorage) Get(key string) (models.User, bool) {
-	val, ok := ut.db[key]
+func (us *usersStorage) Get(key string) (models.User, bool) {
+	val, ok := us.db[key]
 
 	return val, ok
 }
 
-func (ut *usersStorage) Set(key string, value models.User) error {
-	ut.db[key] = value
+func (us *usersStorage) Set(key string, value models.User) error {
+	us.db[key] = value
 
 	return nil
 }
 
-func (ut *usersStorage) GetAllItems() ([]models.User, error) {
+func (us *usersStorage) GetAllItems() ([]models.User, error) {
 	result := []models.User{}
-	for key := range ut.db {
-		if val, ok := ut.db[key]; ok {
+	for key := range us.db {
+		if val, ok := us.db[key]; ok {
 			result = append(result, val)
 		}
 	}
@@ -107,6 +106,6 @@ func (ut *usersStorage) GetAllItems() ([]models.User, error) {
 	return result, nil
 }
 
-func (ut *usersStorage) DebugAllValues() {
-	fmt.Println(ut)
+func (us *usersStorage) DebugAllValues() {
+
 }

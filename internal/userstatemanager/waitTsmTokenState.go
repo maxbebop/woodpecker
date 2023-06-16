@@ -10,7 +10,6 @@ type WaitTmsTokenState struct {
 	userStateManager *UserStateManager
 }
 
-// todo: test msg. //nolint:all
 const (
 	testTokenMask  = "token:"
 	testSuccessMsg = "you have successfully registered!"

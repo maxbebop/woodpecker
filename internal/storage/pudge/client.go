@@ -39,7 +39,6 @@ func (c *Client[T]) Has(key string) bool {
 func (c *Client[T]) Get(key string) (T, bool) {
 	var val T
 	if err := c.db.Get(key, &val); err != nil {
-		c.log.Err(err)
 		return val, false
 	}
 	return val, true

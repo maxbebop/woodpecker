@@ -10,8 +10,8 @@ const testWaitTaskStateMsg = "you don't have any task!"
 
 func (i *WaitTaskState) compute(env models.Environment, handler StateHandler) error {
 	handler.SendMessageByState(
-		i.userStateManager.environment.User,
-		i.userStateManager.environment.User.MessengerToken,
+		env.User,
+		env.User.MessengerToken,
 		testWaitTaskStateMsg,
 		i.userStateManager.log,
 	)

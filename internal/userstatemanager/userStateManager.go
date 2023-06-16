@@ -8,7 +8,12 @@ import (
 )
 
 type StateHandler interface {
-	SendMessageByState(user models.User, messengerToken models.UserMessengerToken, msg string, log *structlog.Logger)
+	SendMessageByState(
+		user models.User,
+		messengerToken models.UserMessengerToken,
+		msg string,
+		log *structlog.Logger,
+	)
 }
 
 type UsersClient interface {
@@ -67,17 +72,17 @@ func (usm *UserStateManager) initStates() {
 	usm.waitTask = waitTask
 }
 
-func (utm *UserStateManager) GetCode() string {
-	t := reflect.TypeOf(utm.currentState).Elem()
+func (usm *UserStateManager) GetCode() string {
+	t := reflect.TypeOf(usm.currentState).Elem()
 	return t.Name()
 }
 
-func (utm *UserStateManager) Compute(env models.Environment, handler StateHandler) error {
-	return utm.currentState.compute(env, handler)
+func (usm *UserStateManager) Compute(env models.Environment, handler StateHandler) error {
+	return usm.currentState.compute(env, handler)
 }
 
-func (utm *UserStateManager) setState(s state) error {
-	utm.currentState = s
+func (usm *UserStateManager) setState(s state) error {
+	usm.currentState = s
 
 	return nil
 }

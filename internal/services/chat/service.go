@@ -56,7 +56,6 @@ type UsersClient interface {
 	Get(key string) (models.User, bool)
 	GetAllItems() ([]models.User, error)
 	Set(key string, value models.User) error
-	//todo: for development only. this should be removed
 	DebugAllValues()
 }
 
@@ -65,7 +64,6 @@ type USMClient interface {
 	Get(key string) (*userstatemanager.UserStateManager, bool)
 	Set(key string, value *userstatemanager.UserStateManager) error
 	GetAllItems() ([]*userstatemanager.UserStateManager, error)
-	//todo: for development only. this should be removed
 	DebugAllValues()
 }
 
@@ -117,14 +115,14 @@ func (s *chatService) processMsgLoop(
 	}
 }
 
-func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Logger) {
+func (s *chatService) processMsg(_ ChatBot, msg Message, log *structlog.Logger) {
 	if msg.Error != nil {
 		log.Fatal(msg.Error)
 	}
 
 	log.Debug("msg", "from", msg.User, "text", msg.Text)
 
-	chatChanelId := models.ChatChanelId(msg.Channel)
+	chatChanelID := models.ChatChanelID(msg.Channel)
 	user, ok := s.getUser(models.UserMessengerToken(msg.User))
 	if !ok {
 		log.Err("get user from db") //nolint:errcheck // intentional
@@ -134,7 +132,7 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 	stateManager := s.getStameManager(user.MessengerToken, log)
 	env := models.Environment{
 		User:         user,
-		ChatChanelId: chatChanelId,
+		ChatChanelID: chatChanelID,
 		Msg:          msg.Text,
 	}
 
@@ -148,7 +146,12 @@ func (s *chatService) processMsg(chatBot ChatBot, msg Message, log *structlog.Lo
 	}
 }
 
-func (s *chatService) SendMessageByState(user models.User, messengerToken models.UserMessengerToken, msg string, log *structlog.Logger) {
+func (s *chatService) SendMessageByState(
+	user models.User,
+	messengerToken models.UserMessengerToken,
+	msg string,
+	log *structlog.Logger,
+) {
 	baseMsg := Message{
 		User:    string(user.MessengerToken),
 		Channel: string(user.MessengerToken),
@@ -207,12 +210,12 @@ func (s *chatService) getUser(messangerToken models.UserMessengerToken) (models.
 }
 
 func (s *chatService) getStameManager(userToken models.UserMessengerToken, log *structlog.Logger) *userstatemanager.UserStateManager {
-	utm, ok := s.utmStorage.Get(string(userToken))
+	usm, ok := s.utmStorage.Get(string(userToken))
 	if !ok {
-		utm = userstatemanager.New(s.userStorage, log)
+		usm = userstatemanager.New(s.userStorage, log)
 	}
 
-	return utm
+	return usm
 }
 
 func (s *chatService) setStateManager(userToken models.UserMessengerToken, stameManager *userstatemanager.UserStateManager, log *structlog.Logger) error {

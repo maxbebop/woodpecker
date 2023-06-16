@@ -13,7 +13,6 @@ type Client[T any] struct {
 }
 
 func New[T any](log *structlog.Logger) (*Client[T], error) {
-
 	db := make(map[string]*T)
 	c := &Client[T]{
 		db:  db,
@@ -72,7 +71,7 @@ func (c *Client[T]) DebugAllValues() {
 	c.log.Debug("All key value --")
 	for key := range c.db {
 		val, ok := c.db[key]
-		c.log.Debug("key: %v;, hasKey: %v; val: %v", string(key), ok, val)
+		c.log.Debug("key: %v;, hasKey: %v; val: %v", key, ok, val)
 	}
 	c.log.Debug("-- -- -- --")
 	c.mu.RUnlock()

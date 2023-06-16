@@ -56,8 +56,9 @@ func (c *Client[T]) GetAllItems() ([]T, error) {
 	}
 	for _, key := range keys {
 		var u T
-		c.db.Get(key, &u)
-		result = append(result, u)
+		if err := c.db.Get(key, &u); err == nil {
+			result = append(result, u)
+		}
 	}
 
 	return result, nil

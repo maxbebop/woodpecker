@@ -1,8 +1,8 @@
 package models
 
-type ChatChanelId string
+type ChatChanelID string
 type Environment struct {
 	User         User
-	ChatChanelId ChatChanelId
+	ChatChanelID ChatChanelID
 	Msg          string
 }

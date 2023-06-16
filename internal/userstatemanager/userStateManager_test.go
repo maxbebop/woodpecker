@@ -50,7 +50,6 @@ func testComputeWaitTaskStateError(t *testing.T, usm *userstatemanager.UserState
 	err := usm.Compute(env, stateHandler)
 
 	require.Error(t, err, "tms token is empty")
-
 }
 func testComputeWaitTaskState(t *testing.T, usm *userstatemanager.UserStateManager) {
 	var log *structlog.Logger

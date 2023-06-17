@@ -16,9 +16,11 @@ type Client[T any] struct {
 func New[T any](log *structlog.Logger) (*Client[T], error) {
 	name := fmt.Sprintf("%T", *new(T))
 	db, err := pudgedb.New(pudgedb.DB, name, log)
+
 	if err != nil {
 		return nil, err
 	}
+
 	c := &Client[T]{
 		db:  db,
 		log: log,
@@ -28,16 +30,18 @@ func New[T any](log *structlog.Logger) (*Client[T], error) {
 }
 
 func (c *Client[T]) Has(key string) bool {
-
 	has, err := c.db.Has(key)
+
 	if err != nil {
 		return false
 	}
+
 	return has
 }
 
 func (c *Client[T]) Get(key string) (T, bool) {
 	var val T
+
 	if err := c.db.Get(key, &val); err != nil {
 		return val, false
 	}

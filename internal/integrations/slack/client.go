@@ -103,7 +103,7 @@ func handleBotEventMessage(event *slackevents.MessageEvent, chatChannel chan<- M
 ) {
 	if event.BotID == "" {
 		text := strings.ToLower(event.Text)
-		chatChannel <- Message{User: event.User, Channel: ChannelID(event.Channel), Text: text}
+		chatChannel <- Message{User: event.User, Channel: ChannelID(event.Channel), Text: text, Error: nil}
 	}
 }
 
@@ -113,7 +113,7 @@ func (c *Client) SendMessage(message OutMessage) error {
 		return fmt.Errorf("failed to post message: %w", err)
 	}
 
-	attachment := slack.Attachment{}
+	attachment := slack.Attachment{} //nolint:empty struct check // intentional
 	attachment.Text = message.Text
 	attachment.Pretext = message.Pretext
 	attachment.Color = message.Color

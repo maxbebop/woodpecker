@@ -29,6 +29,7 @@ func TestProcessMsg(t *testing.T) {
 		Type:    chatservice.Common,
 		Pretext: "",
 		Error:   nil,
+		Empty:   false,
 	}
 	mockChatBot.On("SendMessage", outMsg).Return(nil)
 	err := mockChatBot.SendMessage(outMsg)
@@ -67,7 +68,7 @@ func TestStartChat(t *testing.T) {
 	t.Parallel()
 
 	log := structlog.New()
-	cfg := config.New("../../../slack.config.yml")
+	cfg := config.New("slack.config.yml")
 	chatBot := slackservice.New(cfg, log)
 
 	require.NotNil(t, chatBot, "chatBot")

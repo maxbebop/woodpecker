@@ -14,11 +14,13 @@ const (
 )
 
 func New(storeMode Mode, name string, log *structlog.Logger) (*pudge.Db, error) {
-	pathDb := "./db/" + name
+	pathDB := "./db/" + name
+	//nolint:default struct params check // intentional
 	cfg := &pudge.Config{
-		StoreMode: int(storeMode)}
+		StoreMode: int(storeMode),
+	}
 
-	db, err := pudge.Open(pathDb, cfg)
+	db, err := pudge.Open(pathDB, cfg)
 	if err != nil {
 		return nil, log.Err(err)
 	}

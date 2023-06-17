@@ -25,9 +25,8 @@ func New[T any](log *structlog.Logger) (*Client[T], error) {
 
 func (c *Client[T]) Has(key string) bool {
 	c.mu.RLock()
-	has := false
 	_, ok := c.db[key]
-	has = ok
+	has := ok
 
 	c.mu.RUnlock()
 

@@ -27,14 +27,26 @@ func TestGet(t *testing.T) {
 	usersClient := NewClient(t)
 	usersClient.On("Get", userToken).Return(models.User{}, false)
 	user, ok := usersClient.Get(userToken)
-	require.Equal(t, user, models.User{}, "get user token (key not found) - value")
+	require.Equal(t, user, models.User{
+		ID:             0,
+		MessengerToken: "",
+		Email:          "",
+		Name:           "",
+		TMSToken:       "",
+	}, "get user token (key not found) - value")
 	require.Equal(t, ok, false, "get user token (key not found) - flag")
 }
 
 func TestSet(t *testing.T) {
 	t.Parallel()
 
-	testUser := models.User{MessengerToken: userToken}
+	testUser := models.User{
+		MessengerToken: userToken,
+		ID:             0,
+		Email:          "",
+		Name:           "",
+		TMSToken:       "",
+	}
 	usersClient := NewClient(t)
 	usersClient.On("Set", userToken, testUser).Return(errors.New("set value by key"))
 	err := usersClient.Set(userToken, testUser)

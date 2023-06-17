@@ -28,6 +28,8 @@ func TestCompute(t *testing.T) {
 }
 
 func testInitState(t *testing.T, usm *userstatemanager.UserStateManager) {
+	t.Helper()
+
 	code := usm.GetCode()
 	require.Equal(t, "NewUserState", code, "state newUser")
 }
@@ -72,13 +74,19 @@ func testComputeWaitTaskState(t *testing.T, usm *userstatemanager.UserStateManag
 }
 func createMokeEnvironment() models.Environment {
 	return models.Environment{
-		User: createMokeUser(),
+		User:         createMokeUser(),
+		ChatChanelID: "",
+		Msg:          "",
 	}
 }
 
 func createMokeUser() models.User {
 	return models.User{
 		MessengerToken: "user_messager_token",
+		ID:             0,
+		Email:          "",
+		Name:           "",
+		TMSToken:       "",
 	}
 }
 

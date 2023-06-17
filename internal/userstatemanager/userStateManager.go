@@ -48,9 +48,19 @@ func New(userStorage UsersClient, log *structlog.Logger) *UserStateManager {
 		waitTMSToken: nil,
 		waitTask:     nil,
 		currentState: nil,
-		environment:  models.Environment{},
-		userStorage:  userStorage,
-		log:          log,
+		environment: models.Environment{
+			Msg: "",
+			User: models.User{
+				ID:             0,
+				MessengerToken: "",
+				Email:          "",
+				Name:           "",
+				TMSToken:       "",
+			},
+			ChatChanelID: "",
+		},
+		userStorage: userStorage,
+		log:         log,
 	}
 	usm.initStates()
 	_ = usm.setState(usm.newUser)
@@ -83,6 +93,7 @@ func (usm *UserStateManager) initStates() {
 
 func (usm *UserStateManager) GetCode() string {
 	t := reflect.TypeOf(usm.currentState).Elem()
+
 	return t.Name()
 }
 

@@ -15,5 +15,6 @@ func (i *NoTSMTokenState) compute(env models.Environment, handler StateHandler) 
 		testNoTSMTokenStateMsg,
 		i.userStateManager.log,
 	)
+
 	return i.userStateManager.setState(i.userStateManager.waitTMSToken)
 }

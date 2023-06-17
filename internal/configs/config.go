@@ -33,11 +33,13 @@ func New(filename string) *Config {
 
 	if config.Slack.OAuthToken == "" {
 		log.Fatal("error: oauth_token is empty")
+
 		return nil
 	}
 
 	if config.Slack.AppToken == "" {
 		log.Fatal("error: app_token is empty")
+
 		return nil
 	}
 

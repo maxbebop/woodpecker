@@ -9,7 +9,7 @@ import (
 type Mode int
 
 const (
-	Db    Mode = 0
+	DB    Mode = 0
 	Cache Mode = 2
 )
 

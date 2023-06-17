@@ -33,6 +33,8 @@ func testInitState(t *testing.T, usm *userstatemanager.UserStateManager) {
 }
 
 func testComputeWaitTmsTokenState(t *testing.T, usm *userstatemanager.UserStateManager) {
+	t.Helper()
+
 	var log *structlog.Logger
 	stateHandler := NewStateHandler(t)
 	env := createMokeEnvironment()
@@ -45,6 +47,8 @@ func testComputeWaitTmsTokenState(t *testing.T, usm *userstatemanager.UserStateM
 }
 
 func testComputeWaitTaskStateError(t *testing.T, usm *userstatemanager.UserStateManager) {
+	t.Helper()
+
 	stateHandler := NewStateHandler(t)
 	env := createMokeEnvironment()
 	err := usm.Compute(env, stateHandler)
@@ -52,11 +56,13 @@ func testComputeWaitTaskStateError(t *testing.T, usm *userstatemanager.UserState
 	require.Error(t, err, "tms token is empty")
 }
 func testComputeWaitTaskState(t *testing.T, usm *userstatemanager.UserStateManager) {
+	t.Helper()
+
 	var log *structlog.Logger
 	stateHandler := NewStateHandler(t)
 	env := createMokeEnvironment()
-	env.Msg = "token:user_task_managment_system_token"
-	env.User.TMSToken = "user_task_managment_system_token"
+	env.Msg = "token:user_task_management_system_token"
+	env.User.TMSToken = "user_task_management_system_token"
 	msg := "you have successfully registered!"
 	stateHandler.On("SendMessageByState", env.User, env.User.MessengerToken, msg, log).Once().Return(nil)
 	err := usm.Compute(env, stateHandler)

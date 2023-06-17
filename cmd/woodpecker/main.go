@@ -18,11 +18,14 @@ func main() {
 
 	cfg := config.New("slack.config.yml")
 	usersdbClient, err := users.New(log)
+
 	if err != nil {
 		log.PrintErr(err)
 		panic(err)
 	}
+
 	utmCachClient, err := userstatemanagers.New(log)
+
 	if err != nil {
 		log.PrintErr(err)
 		panic(err)

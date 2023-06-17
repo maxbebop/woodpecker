@@ -15,7 +15,7 @@ type Client[T any] struct {
 
 func New[T any](log *structlog.Logger) (*Client[T], error) {
 	name := fmt.Sprintf("%T", *new(T))
-	db, err := pudgedb.New(pudgedb.Db, name, log)
+	db, err := pudgedb.New(pudgedb.DB, name, log)
 	if err != nil {
 		return nil, err
 	}

@@ -38,6 +38,7 @@ func testComputeWaitTmsTokenState(t *testing.T, usm *userstatemanager.UserStateM
 	t.Helper()
 
 	var log *structlog.Logger
+
 	stateHandler := NewStateHandler(t)
 	env := createMokeEnvironment()
 	msg := "Hello! Send me your tsm token as string token:you_token"
@@ -61,6 +62,7 @@ func testComputeWaitTaskState(t *testing.T, usm *userstatemanager.UserStateManag
 	t.Helper()
 
 	var log *structlog.Logger
+
 	stateHandler := NewStateHandler(t)
 	env := createMokeEnvironment()
 	env.Msg = "token:user_task_management_system_token"

@@ -15,5 +15,6 @@ func (i *WaitTaskState) compute(env models.Environment, handler StateHandler) er
 		testWaitTaskStateMsg,
 		i.userStateManager.log,
 	)
+
 	return nil
 }

@@ -45,6 +45,7 @@ func (c *Client[T]) Get(key string) (T, bool) {
 	if err := c.db.Get(key, &val); err != nil {
 		return val, false
 	}
+
 	return val, true
 }
 

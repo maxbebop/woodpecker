@@ -68,7 +68,7 @@ func TestStartChat(t *testing.T) {
 	t.Parallel()
 
 	log := structlog.New()
-	cfg := config.New("slack.config.yml")
+	cfg := config.New("../../../slack.config.yml")
 	chatBot := slackservice.New(cfg, log)
 
 	require.NotNil(t, chatBot, "chatBot")

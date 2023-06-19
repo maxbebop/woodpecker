@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/powerman/structlog v0.7.3
-	github.com/slack-go/slack v0.12.1
+	github.com/slack-go/slack v0.12.2
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v3 v3.0.1
 )

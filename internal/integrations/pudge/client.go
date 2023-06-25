@@ -1,6 +1,8 @@
 package pudgedb
 
 import (
+	"fmt"
+
 	"github.com/fastogt/pudge"
 	"github.com/powerman/structlog"
 )
@@ -15,14 +17,12 @@ const (
 
 func New(storeMode Mode, name string, log *structlog.Logger) (*pudge.Db, error) {
 	pathDB := "./db/" + name
-	//nolint:default struct params check // intentional
-	cfg := &pudge.Config{
-		StoreMode: int(storeMode),
-	}
+
+	cfg := &pudge.Config{StoreMode: int(storeMode)} //nolint:exhaustruct
 
 	db, err := pudge.Open(pathDB, cfg)
 	if err != nil {
-		return nil, log.Err(err)
+		return nil, fmt.Errorf("faild opend db %v; %w", name, log.Err("faild opend db", err))
 	}
 
 	return db, nil

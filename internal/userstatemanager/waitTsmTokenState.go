@@ -1,7 +1,7 @@
 package userstatemanager
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 	models "woodpecker/internal/models"
 )
@@ -15,9 +15,11 @@ const (
 	testSuccessMsg = "you have successfully registered!"
 )
 
+var errTsmTokenIsEmpty = errors.New("tms token is empty")
+
 func (i *WaitTmsTokenState) compute(env models.Environment, handler StateHandler) error {
 	if len(env.Msg) == 0 {
-		return fmt.Errorf("tms token is empty")
+		return errTsmTokenIsEmpty
 	}
 
 	env.User.TMSToken = getTMSToken(env.Msg)

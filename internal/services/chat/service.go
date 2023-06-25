@@ -6,7 +6,6 @@ import (
 
 	"woodpecker/internal/models"
 	"woodpecker/internal/userstatemanager"
-	usm "woodpecker/internal/userstatemanager"
 
 	"github.com/powerman/structlog"
 )
@@ -68,7 +67,7 @@ type USMClient interface {
 	DebugAllValues()
 }
 
-func New(userStorage UsersClient, utmStorage USMClient) ChatService {
+func New(userStorage UsersClient, utmStorage USMClient) ChatService { //nolint:ireturn
 	c := &chatService{
 		userStorage: userStorage,
 		chatBot:     nil,
@@ -177,24 +176,22 @@ func (s *chatService) SendMessageByState(
 func (s *chatService) initStateManagrersCache(log *structlog.Logger) error {
 	users, err := s.userStorage.GetAllItems()
 	if err != nil {
-		return err //nolint:wrapcheck // intentional
+		return fmt.Errorf("failed get all users from storage %w", err)
 	}
 
 	for i := range users {
 		user := users[i]
 		stateManager := s.getStameManager(user.MessengerToken, log)
 		env := models.Environment{
-			User:         user,
-			Msg:          "",
-			ChatChanelID: "",
+			User: user,
 		}
 
 		if err := stateManager.Compute(env, s); err != nil {
-			return log.Err("state compute", "err", err) //nolint:errcheck // intentional
+			return fmt.Errorf("failed compute state %w", err)
 		}
 
 		if err := s.setStateManager(user.MessengerToken, stateManager, log); err != nil {
-			return log.Err("save state manager", "err", err) //nolint:errcheck // intentional
+			return fmt.Errorf("failed set state manager %w", err)
 		}
 	}
 
@@ -211,10 +208,6 @@ func (s *chatService) hasUser(messengerToken models.UserMessengerToken) bool {
 func (s *chatService) createUser(messengerToken models.UserMessengerToken) models.User {
 	return models.User{
 		MessengerToken: messengerToken,
-		ID:             0,
-		Email:          "",
-		Name:           "",
-		TMSToken:       "",
 	}
 }
 
@@ -229,7 +222,7 @@ func (s *chatService) getUser(messangerToken models.UserMessengerToken) (models.
 func (s *chatService) getStameManager(
 	userToken models.UserMessengerToken,
 	log *structlog.Logger,
-) *usm.UserStateManager {
+) *userstatemanager.UserStateManager {
 	usm, ok := s.utmStorage.Get(string(userToken))
 	if !ok {
 		usm = userstatemanager.New(s.userStorage, log)
@@ -240,10 +233,14 @@ func (s *chatService) getStameManager(
 
 func (s *chatService) setStateManager(
 	userToken models.UserMessengerToken,
-	stameManager *usm.UserStateManager,
+	stameManager *userstatemanager.UserStateManager,
 	log *structlog.Logger,
 ) error {
 	log.Debug("setStateManager: %v\n", stameManager.GetCode())
 
-	return s.utmStorage.Set(string(userToken), stameManager)
+	if err := s.utmStorage.Set(string(userToken), stameManager); err != nil {
+		return fmt.Errorf("failed set state manager %w", err)
+	}
+
+	return nil
 }

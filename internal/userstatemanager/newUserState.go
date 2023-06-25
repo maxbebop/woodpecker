@@ -1,7 +1,8 @@
 package userstatemanager
 
 import (
-	models "woodpecker/internal/models"
+	"fmt"
+	"woodpecker/internal/models"
 )
 
 type NewUserState struct {
@@ -11,18 +12,27 @@ type NewUserState struct {
 func (i *NewUserState) compute(env models.Environment, handler StateHandler) error {
 	i.userStateManager.environment = env
 	if !i.userStateManager.userStorage.Has(string(env.User.MessengerToken)) {
-		if err := i.userStateManager.userStorage.Set(string(env.User.MessengerToken), env.User); err != nil {
-			return err //nolint:wrapcheck // intentional
+		err := i.userStateManager.userStorage.Set(string(env.User.MessengerToken), env.User)
+		if err != nil {
+			return fmt.Errorf("compute state: failed save new user %w", err)
 		}
 	}
 
 	if env.User.TMSToken == "" {
 		if err := i.userStateManager.setState(i.userStateManager.noTMSToken); err != nil {
-			return err //nolint:wrapcheck // intentional
+			return fmt.Errorf("compute state: failed set noTMSToken state %w", err)
 		}
 
-		return i.userStateManager.currentState.compute(env, handler)
+		if err := i.userStateManager.currentState.compute(env, handler); err != nil {
+			return fmt.Errorf("failed compute noTMSToken state: %v; %w", env, err)
+		}
+
+		return nil
 	}
 
-	return i.userStateManager.setState(i.userStateManager.waitTask)
+	if err := i.userStateManager.setState(i.userStateManager.waitTask); err != nil {
+		return fmt.Errorf("failed compute state: set waitTask state %w", err)
+	}
+
+	return nil
 }

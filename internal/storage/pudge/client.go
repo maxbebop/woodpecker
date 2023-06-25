@@ -18,7 +18,7 @@ func New[T any](log *structlog.Logger) (*Client[T], error) {
 	db, err := pudgedb.New(pudgedb.DB, name, log)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("faild create db %v; %w", name, log.Err("faild create db", err))
 	}
 
 	c := &Client[T]{
@@ -39,7 +39,7 @@ func (c *Client[T]) Has(key string) bool {
 	return has
 }
 
-func (c *Client[T]) Get(key string) (T, bool) {
+func (c *Client[T]) Get(key string) (T, bool) { //nolint:ireturn
 	var val T
 
 	if err := c.db.Get(key, &val); err != nil {
@@ -50,7 +50,11 @@ func (c *Client[T]) Get(key string) (T, bool) {
 }
 
 func (c *Client[T]) Set(key string, value T) error {
-	return c.db.Set(key, value)
+	if err := c.db.Set(key, value); err != nil {
+		return fmt.Errorf("%w", c.log.Err("failed set value by key", err))
+	}
+
+	return nil
 }
 
 func (c *Client[T]) GetAllItems() ([]T, error) {
@@ -58,7 +62,9 @@ func (c *Client[T]) GetAllItems() ([]T, error) {
 	keys, err := c.db.Keys(nil, 0, 0, true)
 
 	if err != nil {
-		return result, err
+		err = c.log.Err(err)
+
+		return result, fmt.Errorf("%w", c.log.Err("failed get all items", err))
 	}
 
 	for _, key := range keys {

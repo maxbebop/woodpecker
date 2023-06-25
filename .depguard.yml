@@ -1,6 +1,0 @@
-Main:
-  files:
-  - $all
-Internal:
-  files:
-  - "**/internal/**/*.go"

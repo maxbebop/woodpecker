@@ -1,6 +1,7 @@
 package userstatemanager
 
 import (
+	"fmt"
 	"reflect"
 	models "woodpecker/internal/models"
 
@@ -49,14 +50,8 @@ func New(userStorage UsersClient, log *structlog.Logger) *UserStateManager {
 		waitTask:     nil,
 		currentState: nil,
 		environment: models.Environment{
-			Msg: "",
-			User: models.User{
-				ID:             0,
-				MessengerToken: "",
-				Email:          "",
-				Name:           "",
-				TMSToken:       "",
-			},
+			Msg:          "",
+			User:         models.User{},
 			ChatChanelID: "",
 		},
 		userStorage: userStorage,
@@ -98,7 +93,11 @@ func (usm *UserStateManager) GetCode() string {
 }
 
 func (usm *UserStateManager) Compute(env models.Environment, handler StateHandler) error {
-	return usm.currentState.compute(env, handler)
+	if err := usm.currentState.compute(env, handler); err != nil {
+		return fmt.Errorf("failed compute state %w", err)
+	}
+
+	return nil
 }
 
 func (usm *UserStateManager) setState(s state) error {

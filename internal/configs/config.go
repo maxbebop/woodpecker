@@ -12,8 +12,8 @@ type Config struct {
 }
 
 type Slack struct {
-	OAuthToken string `yaml:"oauth_token"` //nolint:yaml params // intentional
-	AppToken   string `yaml:"app_token"`   //nolint:yaml params // intentional
+	OAuthToken string `yaml:"oauth_token"` //nolint: tagliatelle
+	AppToken   string `yaml:"app_token"`   //nolint: tagliatelle
 }
 
 func New(filename string) *Config {

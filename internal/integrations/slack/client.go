@@ -113,7 +113,7 @@ func (c *Client) SendMessage(message OutMessage) error {
 		return fmt.Errorf("failed to post message: %w", err)
 	}
 
-	attachment := slack.Attachment{} //nolint:empty struct check // intentional
+	attachment := slack.Attachment{} //nolint
 	attachment.Text = message.Text
 	attachment.Pretext = message.Pretext
 	attachment.Color = message.Color

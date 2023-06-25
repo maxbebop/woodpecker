@@ -12,8 +12,8 @@ type Config struct {
 }
 
 type Slack struct {
-	OAuthToken string `yaml:"oauth_token"`
-	AppToken   string `yaml:"app_token"`
+	OAuthToken string `yaml:"oauth_token"` //nolint: tagliatelle
+	AppToken   string `yaml:"app_token"`   //nolint: tagliatelle
 }
 
 func New(filename string) *Config {
@@ -22,7 +22,10 @@ func New(filename string) *Config {
 		log.Fatal(err)
 	}
 
-	config := Config{}
+	config := Config{Slack: Slack{
+		OAuthToken: "",
+		AppToken:   "",
+	}}
 	if err := yaml.Unmarshal(file, &config); err != nil {
 		log.Fatal(err)
 	}
@@ -33,11 +36,13 @@ func New(filename string) *Config {
 
 	if config.Slack.OAuthToken == "" {
 		log.Fatal("error: oauth_token is empty")
+
 		return nil
 	}
 
 	if config.Slack.AppToken == "" {
 		log.Fatal("error: app_token is empty")
+
 		return nil
 	}
 

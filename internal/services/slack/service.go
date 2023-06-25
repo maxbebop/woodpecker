@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	config "woodpecker/internal/configs"
-	slackclient "woodpecker/internal/pkg/slack"
-	"woodpecker/internal/pkg/socketmodewrap"
+	slackclient "woodpecker/internal/integrations/slack"
+	"woodpecker/internal/integrations/socketmodewrap"
 	chatservice "woodpecker/internal/services/chat"
 
 	"github.com/slack-go/slack"
@@ -114,6 +114,8 @@ func getMsgPretext(msgType chatservice.MessageType) string {
 		return "Warning"
 	case chatservice.Attention:
 		return "Attention"
+	case chatservice.Common:
+		return "Common"
 	}
 
 	return ""
@@ -125,6 +127,8 @@ func getMsgColor(msgType chatservice.MessageType) string {
 		return "#ff9900"
 	case chatservice.Attention:
 		return "#ff471a"
+	case chatservice.Common:
+		return "#4af030"
 	}
 
 	return "#4af030"

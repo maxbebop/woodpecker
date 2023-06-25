@@ -1,4 +1,4 @@
-= woodpecker bot image:https://github.com/maxbebop/woodpecker/actions/workflows/test.yml/badge.svg?branch=main["Build Status"] image:https://coveralls.io/repos/github/maxbebop/woodpecker/badge.svg?branch=main["Coverage Status",link="https://coveralls.io/github/maxbebop/woodpecker?branch=v0.0.1"]
+= woodpecker bot image:https://github.com/maxbebop/woodpecker/actions/workflows/test.yml/badge.svg?branch=main["Build Status"] image:https://coveralls.io/repos/github/maxbebop/woodpecker/badge.svg?branch=v0.0.1["Coverage Status",link="https://coveralls.io/github/maxbebop/woodpecker?branch=v0.0.1"]
 Daniel Podolsky
 :toc:
 

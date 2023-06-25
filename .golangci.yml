@@ -29,6 +29,7 @@ linters:
     - varnamelen # useless in the scope of this project
     - gofumpt # useless in the scope of this project
     - gci # useless in the scope of this project
+    - depguard # the linter began to behave strangely, suddenly began to mark imports that had previously been validated. Disconnected until the reasons are clarified
 issues:
   # See the dedicated "issues" documentation section.
   option: value

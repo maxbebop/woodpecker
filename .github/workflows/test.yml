@@ -13,7 +13,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v3.5.3
       - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v2.3
+        uses: reviewdog/action-golangci-lint@v2.5
   test:
     strategy:
       matrix:
